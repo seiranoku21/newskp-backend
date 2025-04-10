@@ -1,0 +1,612 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\SimpegController;
+use App\Http\Controllers\SkpKontrakController;
+use App\Http\Controllers\AktifitasKinerjaController;
+use DB;
+
+class AglobalController extends Controller
+{   
+    // ---PEGAWAI---
+    public function get_pegawai_by_nip(Request $request){
+        $nip = $request->nip;
+        $pegawai = SimpegController::pegawai($nip);
+        return $pegawai;
+    }  
+    public function get_jabatan_by_nip(Request $request){
+        $nip = $request->nip;
+        $jabatan = SimpegController::jabatan($nip);
+        return $jabatan;
+    }
+
+    public function get_riwayat_jabatan_by_nip(Request $request){
+        $nip = $request->nip;
+        $riwayat_jabatan = SimpegController::riwayat_jabatan($nip);
+        return $riwayat_jabatan;
+    }
+    // ---END PEGAWAI---
+
+    // ---PERIODE---
+    public function periode_rentang_bln(Request $request){
+        $periode_id = $request->periode_id;
+        $tahun = $request->tahun ?? date('Y'); // Use current year if not provided
+        $data = DB::table('ref_periode')
+                ->select('bln_mulai', 'bln_selesai','periode','rentang')
+                ->where('id', $periode_id)->first();
+
+        if (!$data) {
+            return response()->json(["error" => "Period not found"], 404);
+        }
+
+        $periode_mulai = date('Y-m-d', strtotime($tahun . '-' . $data->bln_mulai . '-01'));
+        $periode_selesai = date('Y-m-d', strtotime($tahun . '-' . $data->bln_selesai . '-' . date('t', strtotime($tahun . '-' . $data->bln_selesai . '-01'))));
+        
+        $result = [
+            "periode" => $data->periode,
+            "rentang" => $data->rentang,
+            "tahun" => $tahun,
+            "periode_mulai" => $periode_mulai,
+            "periode_selesai" => $periode_selesai,
+            "bln_mulai" => $data->bln_mulai,
+            "bln_selesai" => $data->bln_selesai,
+            "periode_id" => $periode_id
+        ];
+
+        return response()->json($result);
+    }
+    // ---END PERIODE---
+
+    // ---PERILAKU KERJA---
+    public function get_ekspektasi_pimpinan(Request $request){
+        $uid = $request->uid;
+        $kode_pk = $request->kode_pk;
+        $data = DB::table('perilaku_kerja')
+                ->select('ekspektasi_pimpinan')
+                ->where('uid', $uid)
+                ->where('perilaku_kerja_kode', $kode_pk)
+                ->first();
+        return $data;
+    }
+    // ---END PERILAKU KERJA---
+
+    // ---PORTFOLIO KINERJA---
+    public function get_portofolio_by_nip(Request $request){
+        $nip = $request->nip;
+        $data = DB::table('portofolio_kinerja')
+                ->select(DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'id','uid','jabatan','unit_kerja')            
+                ->where('nip', $nip)
+                ->get()
+                ->toArray();
+        return $data;
+    }
+
+    public function get_portofolio_by_id(Request $request){
+        $id = $request->id;
+        $data = DB::table('portofolio_kinerja')
+                ->select('uid')
+                ->where('id', $id)
+                ->first();
+        return $data;
+    }   
+    // ---END PORTFOLIO KINERJA---
+
+    // ---AKTIFITAS KINERJA---
+    public function get_aktifitas(Request $request){
+        $nip = $request->nip;
+        $query = DB::table('aktifitas_kinerja as a');
+        $query->leftJoin('rencana_hasil_kerja_item as b', 'a.rhki_id', '=', 'b.id');    
+        $query->leftJoin('rencana_hasil_kerja_atasan as c', 'a.rhka_id', '=', 'c.id');
+        $query->select('a.*', 'b.kegiatan as kegiatan', 'c.kategori as kategori');
+        $query->where('a.nip', $nip);
+        
+        if($request->has('tanggal_mulai') && $request->has('tanggal_selesai')){
+            $tanggal_mulai = $request->tanggal_mulai;
+            $tanggal_selesai = $request->tanggal_selesai;
+            $query->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai]);
+        }
+
+        // Get grouped records with all columns included in GROUP BY
+        $record_group = DB::table('aktifitas_kinerja as a')
+            ->leftJoin('rencana_hasil_kerja_item as b', 'a.rhki_id', '=', 'b.id')
+            ->leftJoin('rencana_hasil_kerja_atasan as c', 'a.rhka_id', '=', 'c.id')
+            ->select('a.rhki_id', 
+                     'b.kegiatan', 
+                     'b.ukuran_keberhasilan',
+                     'b.realisasi',
+                     'c.kategori'
+                     )
+            ->where('a.nip', $nip)
+            ->when($request->has('tanggal_mulai') && $request->has('tanggal_selesai'), function($query) use ($request) {
+                return $query->whereBetween('a.tanggal_mulai', [$request->tanggal_mulai, $request->tanggal_selesai]);
+            })
+            ->groupBy('a.rhki_id', 'b.kegiatan', 'b.ukuran_keberhasilan', 'b.realisasi', 'c.kategori')
+            ->get();
+
+        $jml_data = $query->count();
+        $data = $query->get();  
+
+        return response()->json([
+            'jml_data' => $jml_data,
+            'records' => $data,
+            'record_group' => $record_group
+        ]);
+    }
+    // ---END AKTIFITAS KINERJA---  
+
+
+    // ---VERIFIKASI---
+    public function vrf_listing(Request $request){
+        $nip_penilai = $request->nip_penilai;
+        $tahun = $request->tahun;
+        $skp_tipe_id = $request->skp_tipe_id;
+        $periode_id = $request->periode_id;
+        $status_id = $request->status_id;
+
+        $data = DB::table('skp_kontrak as a')
+                ->leftJoin('portofolio_kinerja as b', 'a.portofolio_id', '=', 'b.id')
+                ->leftJoin('ref_skp_tipe as c', 'a.skp_tipe_id', '=', 'c.id')
+                ->leftJoin('ref_periode as d', 'a.periode_id', '=', 'd.id')
+                ->leftJoin('ref_status as e', 'a.status_id', '=', 'e.id')
+                ->select('a.uid', 
+                        'a.skp_tipe_id',
+                        'a.periode_id',
+                         'a.pegawai_nip', 
+                         'a.pegawai_nama',
+                         'a.pegawai_jabatan',
+                         'a.portofolio_id',
+                         'b.uid as portofolio_uid',
+                         'c.skp_tipe as skp_tipe',
+                         'd.periode as periode',
+                         'd.rentang as rentang',
+                         'd.jml_bln as jml_bln',
+                         'e.status as status',
+                         'e.id as status_id',
+                         'a.rating_hasil_kerja as rating_hasil_kerja',
+                         'a.rating_perilaku_kerja as rating_perilaku_kerja',
+                         'a.predikat_kinerja as predikat_kinerja',
+                         'a.poin as poin'
+
+                         )
+                ->where('a.penilai_nip', $nip_penilai)
+                ->where('a.tahun', $tahun)
+                ->where('a.skp_tipe_id', $skp_tipe_id)
+                ->where('a.periode_id', $periode_id)
+                ->orderBy('a.pegawai_nama', 'asc')
+                ->get();
+
+        $jml_data = $data->count();
+
+        $response = [
+            'tahun' => $tahun,
+            'skp_tipe_id' => $skp_tipe_id,
+            'periode_id' => $periode_id,
+            'jml_data' => $jml_data,
+            'records' => $data
+        ];
+
+        // Only add these fields if data exists
+        if($jml_data > 0) {
+            $response['skp_tipe'] = $data[0]->skp_tipe;
+            $response['periode'] = $data[0]->periode;
+            $response['rentang'] = $data[0]->rentang;
+            $response['jml_bln'] = $data[0]->jml_bln;
+        }
+
+        return response()->json($response);
+    }
+
+    function is_vrf_skp(Request $request){
+        $nip_penilai = $request->nip_penilai;
+        $exists = DB::table('skp_kontrak')
+                ->where('penilai_nip', $nip_penilai)
+                ->exists();
+        return response()->json([
+            'exists' => $exists
+        ]);
+    }
+
+    function is_vrf_skp_data(Request $request){
+        $nip_penilai = $request->nip_penilai;
+        $data = DB::table('skp_kontrak')
+                ->where('penilai_nip', $nip_penilai)
+                ->first();
+        return response()->json($data);
+    }
+
+    function cek_perilaku_kerja_template(Request $request){
+        $uid = $request->uid;
+        $data = DB::table('perilaku_kerja')
+                ->where('uid', $uid)
+                ->exists();
+        return response()->json($data);
+    }
+
+    function tambah_perilaku_kerja_template(Request $request){
+        $uid = $request->uid;
+        
+        $perilaku_kerja_kode = [1, 2, 3, 4, 5, 6, 7];
+        $ekspektasi_pimpinan = [
+            'Memberikan pelayanan yang maksimal',
+            'Menjunjung tinggi prinsip-prinsip yang sudah ditetapkan Unit kerja/Organisasi/Lembaga',
+            'Menyelesaikan setiap pekerjaan sesuai dengan target dan standar mutu yang ditetapkan',
+            'Membangun komunikasi yang lebih terbuka dan menjaga hubungan baik dengan stakeholder',
+            'Melaksanakan perintah dari pimpinan dengan sungguh-sungguh',
+            'Aktif berkomunikasi dengan sesama pegawai terkait dengan pelayanan',
+            'berkolaborasi dengan bagian lain yang berhubungan tugas pokok dan fungsinya'
+        ];
+
+        $data = [];
+        for($i = 0; $i < count($perilaku_kerja_kode); $i++) {
+            $data[] = [
+                'uid' => $uid,
+                'perilaku_kerja_kode' => $perilaku_kerja_kode[$i],
+                'ekspektasi_pimpinan' => $ekspektasi_pimpinan[$i]
+            ];
+        }
+
+        DB::table('perilaku_kerja')->insert($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data perilaku kerja berhasil ditambahkan'
+        ]);
+    }
+
+    function tambah_perilaku_kerja_template_blank(Request $request){
+        $uid = $request->uid;
+        
+        $perilaku_kerja_kode = [1, 2, 3, 4, 5, 6, 7];
+        $ekspektasi_pimpinan = [
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
+        ];
+
+        $data = [];
+        for($i = 0; $i < count($perilaku_kerja_kode); $i++) {
+            $data[] = [
+                'uid' => $uid,
+                'perilaku_kerja_kode' => $perilaku_kerja_kode[$i],
+                'ekspektasi_pimpinan' => $ekspektasi_pimpinan[$i]
+            ];
+        }
+
+        DB::table('perilaku_kerja')->insert($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data perilaku kerja berhasil ditambahkan'
+        ]);
+    }
+
+    function ubah_perilaku_kerja(Request $request){
+        try {
+            $uid = $request->uid;
+            $perilaku_kerja_kode = $request->perilaku_kerja_kode;
+            $ekspektasi_pimpinan = $request->ekspektasi_pimpinan;
+            
+            // Validate required fields
+            if (!$uid || !$perilaku_kerja_kode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID dan kode perilaku kerja harus diisi'
+                ], 400);
+            }
+
+            // Check if record exists
+            $exists = DB::table('perilaku_kerja')
+                    ->where('uid', $uid)
+                    ->where('perilaku_kerja_kode', $perilaku_kerja_kode)
+                    ->exists();
+
+            if (!$exists) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Data perilaku kerja tidak ditemukan'
+                ], 404);
+            }
+
+            // Update record
+            DB::table('perilaku_kerja')
+                ->where('uid', $uid)
+                ->where('perilaku_kerja_kode', $perilaku_kerja_kode)
+                ->update([
+                    'ekspektasi_pimpinan' => $ekspektasi_pimpinan
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data perilaku kerja berhasil diperbarui'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    function get_poin_aktifitas(Request $request){  
+        $nip = $request->nip;
+        $tanggal_mulai = $request->tanggal_mulai;
+        $tanggal_selesai = $request->tanggal_selesai;
+        $data = DB::table('aktifitas_kinerja')
+                ->where('nip', $nip)
+                ->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai])
+                ->get();
+        $total_poin = $data->sum('poin');
+        return response()->json([
+            'success' => true,
+            'data' => $total_poin
+        ]);
+    }
+
+    function rating_hasil_kerja_aktifitas(Request $request){
+        $nip = $request->nip;
+        $tanggal_mulai = $request->tanggal_mulai;
+        $tanggal_selesai = $request->tanggal_selesai;
+        $data = DB::table('aktifitas_kinerja')
+                ->select('rating_hasil_kerja', DB::raw('count(*) as count'))
+                ->where('nip', $nip)
+                ->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai])
+                ->groupBy('rating_hasil_kerja')
+                ->orderByDesc('count')
+                ->first();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $data ? $data->rating_hasil_kerja : null
+        ]);
+    }
+
+    function ubah_skp_kontrak_vrf(Request $request){    
+        $uid = $request->uid;
+        $rating_hasil_kerja = $request->rating_hasil_kerja;
+        $rating_perilaku_kerja = $request->rating_perilaku_kerja; 
+        $predikat_kinerja = $request->predikat_kinerja;
+        $poin = $request->poin;
+
+        // Validate input data
+        if (empty($uid)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UID SKP Kontrak harus diisi'
+            ], 400);
+        }
+
+        try {
+            // Check if record exists first
+            $exists = DB::table('skp_kontrak')
+                ->where('uid', $uid)
+                ->exists();
+
+            if (!$exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data SKP Kontrak tidak ditemukan'
+                ], 404);
+            }
+
+            // Prepare update data
+            $updateData = [];
+            if (!empty($rating_hasil_kerja)) {
+                $updateData['rating_hasil_kerja'] = $rating_hasil_kerja;
+            }
+            if (!empty($rating_perilaku_kerja)) {
+                $updateData['rating_perilaku_kerja'] = $rating_perilaku_kerja;
+            }
+            if (!empty($predikat_kinerja)) {
+                $updateData['predikat_kinerja'] = $predikat_kinerja;
+            }
+            if (!empty($poin)) {
+                $updateData['poin'] = $poin;
+            }
+
+            // Only update if there are fields to update
+            if (!empty($updateData)) {
+                $updated = DB::table('skp_kontrak')
+                    ->where('uid', $uid)
+                    ->update($updateData);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data SKP Kontrak berhasil diperbarui',
+                    'updated_data' => $updateData
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada data yang diperbarui'
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating SKP Kontrak: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    function ubah_perilaku_kerja_vrf(Request $request){
+        try {
+            $uid = $request->uid;
+            $rating_perilaku_kerja = $request->rating_perilaku_kerja;
+
+            // Check if record exists
+            $exists = DB::table('skp_kontrak')
+                    ->where('uid', $uid)
+                    ->exists();
+
+            if (!$exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data SKP Kontrak tidak ditemukan'
+                ], 404);
+            }
+
+            // Update the record
+            DB::table('skp_kontrak')
+                ->where('uid', $uid)
+                ->update(['rating_perilaku_kerja' => $rating_perilaku_kerja]);
+
+            // Get updated data
+            $updated = DB::table('skp_kontrak')
+                    ->where('uid', $uid)
+                    ->select('rating_perilaku_kerja')
+                    ->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rating perilaku kerja berhasil diperbarui',
+                'data' => $updated
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating perilaku kerja: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    function ubah_predikat_kinerja(Request $request){
+        $uid = $request->uid;
+        $predikat_kinerja = $request->predikat_kinerja;
+
+        // Check if record exists
+        $exists = DB::table('skp_kontrak')
+                ->where('uid', $uid)
+                ->exists();
+
+        if (!$exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data SKP Kontrak tidak ditemukan'
+            ], 404);
+        }
+
+        // Update the record
+        DB::table('skp_kontrak')
+            ->where('uid', $uid)
+            ->update(['predikat_kinerja' => $predikat_kinerja]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Predikat kinerja berhasil diperbarui',
+            'data' => $predikat_kinerja
+        ]);
+        
+    }
+
+    function get_rating(Request $request){
+        $uid = $request->uid;
+        $data = DB::table('skp_kontrak')
+                ->where('uid', $uid)
+                ->select('rating_perilaku_kerja', 'rating_hasil_kerja', 'predikat_kinerja', 'poin','status_vrf_id')
+                ->first();
+        return $data;
+    }
+
+    function ubah_status_vrf(Request $request){
+        $uid = $request->uid;
+        $status_vrf_id = $request->status_vrf_id;
+        DB::table('skp_kontrak')
+            ->where('uid', $uid)
+            ->update(['status_vrf_id' => $status_vrf_id]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Status verifikasi berhasil diperbarui',
+            'data' => $status_vrf_id
+        ]);
+    }
+
+    // ---END VERIFIKASI---
+
+    // ---ADMIN---
+    function listing_vrf(Request $request){
+        $tahun = $request->tahun;       
+        $periode_id = $request->periode_id;
+        $skp_tipe_id = $request->skp_tipe_id;
+
+        $data = DB::table('skp_kontrak')
+                ->select('penilai_nip', 
+                         'penilai_nama',
+                         'penilai_jabatan',
+                         'penilai_unit_kerja'
+                         )
+                ->where('tahun', $tahun)
+                ->where('periode_id', $periode_id)
+                ->where('skp_tipe_id', $skp_tipe_id)
+                ->groupBy('penilai_nip', 
+                         'penilai_nama',
+                         'penilai_jabatan', 
+                         'penilai_unit_kerja')
+                ->get();
+
+        $jml_data = $data->count();
+                
+        return response()->json([
+            'success' => true,
+            'data' => $data->toArray(),
+            'jml_data' => $jml_data
+        ]);
+    }
+    // ---END ADMIN---
+
+    // ---KONTRAK KINERJA SKP---
+    
+    function get_skp_kontrak(Request $request){
+        $uid = $request->skp_kontrak_uid;
+        $data = DB::table('skp_kontrak')
+                ->select('skp_kontrak.*')
+                ->where('uid', $uid)
+                ->first();
+        return $data;
+            
+    }
+    // ---END KONTRAK KINERJA SKP
+
+    // ---REFERENSI--
+    public function ref_perilaku_kerja(){
+        $data = DB::table('ref_perilaku_kerja')
+                ->select('ref_perilaku_kerja.*')
+                ->orderBy('kode')
+                ->get()
+                ->groupBy(function($item) {
+                    // Get the main parent code (e.g., for "1.2" return "1")
+                    return explode('.', $item->kode)[0];
+                });
+        return $data;
+    }
+
+    public function ref_skp_tipe(Request $request){
+        $skp_id = $request->skp_id;
+        $data = DB::table('ref_skp_tipe')
+                ->select('ref_skp_tipe.*')
+                ->where('id', $skp_id)
+                ->first();
+        return $data;
+    }
+
+    public function ref_hasil_kerja(Request $request){
+        $kode = $request->kode;
+        $data = DB::table('ref_hasil_kerja')
+                ->select('ref_hasil_kerja.*')
+                ->where('kode', $kode)
+                ->first();
+        return $data;
+    }
+    // ---END REFERENSI--
+
+}
