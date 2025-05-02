@@ -36,6 +36,7 @@ class AktifitasKinerjaAddRequest extends FormRequest
 				"satuan" => "nullable",
 				"dokumen" => "nullable",
 				"gambar" => "nullable",
+                "tautan" => "nullable"
         ];
     }
 
