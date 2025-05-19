@@ -95,8 +95,9 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 });
 
 // Create a new middleware group that checks for valid tokens
-Route::middleware(['api.key'])->group(function () {
-    // Move all the non-auth routes inside this group
+// Remove the middleware group for api.key
+
+    // Move all the routes previously inside the api.key middleware group
     Route::get('home', 'HomeController@index');
     Route::get('get_photo', 'AccountController@get_photo');
 
@@ -198,7 +199,7 @@ Route::middleware(['api.key'])->group(function () {
     // ---ADMIN---
     Route::get('admin/listing_vrf', 'AglobalController@listing_vrf');
     // ---END ADMIN---      
-});
+
 
 // Keep authentication routes outside the middleware
 Route::post('auth/login', 'AuthController@login');

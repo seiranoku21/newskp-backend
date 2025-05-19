@@ -167,8 +167,8 @@ class AglobalController extends Controller
                          'a.rating_hasil_kerja as rating_hasil_kerja',
                          'a.rating_perilaku_kerja as rating_perilaku_kerja',
                          'a.predikat_kinerja as predikat_kinerja',
-                         'a.poin as poin'
-
+                         'a.poin as poin',
+                         'a.bobot_persen as bobot_persen'
                          )
                 ->where('a.penilai_nip', $nip_penilai)
                 ->where('a.tahun', $tahun)
@@ -342,10 +342,29 @@ class AglobalController extends Controller
                 ->where('nip', $nip)
                 ->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai])
                 ->get();
+
         $total_poin = $data->sum('poin');
+
+        $hk_ae = $data->where('rating_hasil_kerja','AE')->count();
+        $hk_se = $data->where('rating_hasil_kerja','SE')->count();
+        $hk_be = $data->where('rating_hasil_kerja','BE')->count();
+
+        $total_aktifitas = $data->count();
+        $total_aktifitas_dinilai = $data->whereNotIn('rating_hasil_kerja', ['BM'])->count();
+
+        $bobot_nilai = $total_aktifitas * 2;
+
+        $bobot_persen = $bobot_nilai > 0 ? number_format(($total_poin / $bobot_nilai) * 100, 2, '.', '') : 0;
+
         return response()->json([
             'success' => true,
-            'data' => $total_poin
+            'data' => $total_poin,
+            'hk_ae' => $hk_ae,
+            'hk_se' => $hk_se,
+            'hk_be' => $hk_be,
+            'jml_aktifitas_dinilai' => $total_aktifitas_dinilai,
+            'total_aktifitas' => $total_aktifitas,
+            'bobot_persen' => $bobot_persen
         ]);
     }
 
@@ -373,6 +392,12 @@ class AglobalController extends Controller
         $rating_perilaku_kerja = $request->rating_perilaku_kerja; 
         $predikat_kinerja = $request->predikat_kinerja;
         $poin = $request->poin;
+
+        $hk_ae = $request->hk_ae;
+        $hk_se = $request->hk_se;
+        $hk_be = $request->hk_be;
+        $bobot_persen = $request->bobot_persen;
+
 
         // Validate input data
         if (empty($uid)) {
@@ -408,6 +433,18 @@ class AglobalController extends Controller
             }
             if (!empty($poin)) {
                 $updateData['poin'] = $poin;
+            }
+            if (!empty($hk_ae)) {
+                $updateData['hk_ae'] = $hk_ae;
+            }
+            if (!empty($hk_se)) {
+                $updateData['hk_se'] = $hk_se;
+            }
+            if (!empty($hk_be)) {
+                $updateData['hk_be'] = $hk_be;
+            }
+            if (!empty($bobot_persen)) {
+                $updateData['bobot_persen'] = $bobot_persen;
             }
 
             // Only update if there are fields to update

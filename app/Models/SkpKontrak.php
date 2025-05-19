@@ -91,6 +91,10 @@ class SkpKontrak extends Model
 			"skp_kontrak.rating_hasil_kerja",
 			"skp_kontrak.rating_perilaku_kerja",
 			"skp_kontrak.predikat_kinerja",
+			"skp_kontrak.hk_ae",
+			"skp_kontrak.hk_se",
+			"skp_kontrak.hk_be",
+			"skp_kontrak.bobot_persen",
 			"skp_kontrak.updated_at",
 			"skp_kontrak.created_at"
 		];
