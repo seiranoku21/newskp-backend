@@ -73,6 +73,18 @@ class AglobalController extends Controller
     // ---END PERILAKU KERJA---
 
     // ---PORTFOLIO KINERJA---
+    // ---PORTFOLIO KINERJA---
+
+    public function get_portofolio(Request $request){
+        $nip = $request->nip;
+        $data = DB::table('portofolio_kinerja')
+                ->select('id','uid',DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'jabatan','unit_kerja')            
+                ->where('nip', $nip)
+                ->get()
+                ->toArray();
+        return $data;
+    }
+
     public function get_portofolio_by_nip(Request $request){
         $nip = $request->nip;
         $data = DB::table('portofolio_kinerja')
@@ -132,6 +144,47 @@ class AglobalController extends Controller
             'jml_data' => $jml_data,
             'records' => $data,
             'record_group' => $record_group
+        ]);
+    }
+
+    public function post_aktifitas(Request $request){
+        // Validasi data yang diperlukan
+        $validated = $request->validate([
+            'nip' => 'required|string',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'uraian' => 'required|string',
+            'rhki_id' => 'nullable|integer',
+            'rhka_id' => 'nullable|integer',
+            'output' => 'nullable|string',
+            'volume' => 'nullable|numeric',
+            'satuan' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        // Insert ke tabel aktifitas_kinerja
+        $insertedId = DB::table('aktifitas_kinerja')->insertGetId([
+            'nip' => $validated['nip'],
+            'tanggal_mulai' => $validated['tanggal_mulai'],
+            'tanggal_selesai' => $validated['tanggal_selesai'],
+            'uraian' => $validated['uraian'],
+            'rhki_id' => $validated['rhki_id'] ?? null,
+            'rhka_id' => $validated['rhka_id'] ?? null,
+            'output' => $validated['output'] ?? null,
+            'volume' => $validated['volume'] ?? null,
+            'satuan' => $validated['satuan'] ?? null,
+            'keterangan' => $validated['keterangan'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Ambil data yang baru saja diinsert
+        $data = DB::table('aktifitas_kinerja')->where('id', $insertedId)->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Aktifitas kinerja berhasil ditambahkan.',
+            'data' => $data
         ]);
     }
     // ---END AKTIFITAS KINERJA---  

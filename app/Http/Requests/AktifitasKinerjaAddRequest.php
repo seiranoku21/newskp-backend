@@ -25,14 +25,14 @@ class AktifitasKinerjaAddRequest extends FormRequest
 		
         return [
             
-				"rhki_id" => "nullable",
-				"rhka_id" => "nullable",
-				"portofolio_kinerja_uid" => "nullable",
-				"nip" => "nullable|string",
-				"tanggal_mulai" => "nullable|date",
+				"rhki_id" => "required",
+				"rhka_id" => "required",
+				"portofolio_kinerja_uid" => "required",
+				"nip" => "required|string",
+				"tanggal_mulai" => "required|date",
 				"tanggal_selesai" => "nullable|date",
-				"tahun" => "nullable|numeric",
-				"jumlah" => "nullable|numeric",
+				"tahun" => "required|numeric",
+				"jumlah" => "required|numeric",
 				"satuan" => "nullable",
 				"dokumen" => "nullable",
 				"gambar" => "nullable",

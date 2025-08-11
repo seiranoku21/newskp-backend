@@ -17,6 +17,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'rbac'])->group(function () {
 
+    // ---INTEGRASI
+
+    Route::get('portofolio', 'AglobalController@get_portofolio');
+    Route::get('aktifitas', 'AglobalController@get_aktifitas');	
+    Route::post('aktifitas/add', 'AktifitasKinerjaController@add');	
+    
+    // ---END INTEGRASI
+
+
 /* routes for LoginSesi Controller  */	
 	Route::get('login_sesi/', 'LoginSesiController@index');
 	Route::get('login_sesi/index', 'LoginSesiController@index');
