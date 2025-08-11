@@ -73,6 +73,7 @@ class AglobalController extends Controller
     // ---END PERILAKU KERJA---
 
     // ---PORTFOLIO KINERJA---
+    
     public function get_portofolio_by_nip(Request $request){
         $nip = $request->nip;
         $data = DB::table('portofolio_kinerja')
