@@ -73,6 +73,7 @@ class AglobalController extends Controller
     // ---END PERILAKU KERJA---
 
     // ---PORTFOLIO KINERJA---
+
     // ---PORTFOLIO KINERJA---
 
     public function get_portofolio(Request $request){
