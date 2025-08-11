@@ -73,7 +73,19 @@ class AglobalController extends Controller
     // ---END PERILAKU KERJA---
 
     // ---PORTFOLIO KINERJA---
-    
+
+    // ---PORTFOLIO KINERJA---
+
+    public function get_portofolio(Request $request){
+        $nip = $request->nip;
+        $data = DB::table('portofolio_kinerja')
+                ->select('id','uid',DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'jabatan','unit_kerja')            
+                ->where('nip', $nip)
+                ->get()
+                ->toArray();
+        return $data;
+    }
+
     public function get_portofolio_by_nip(Request $request){
         $nip = $request->nip;
         $data = DB::table('portofolio_kinerja')
@@ -135,6 +147,47 @@ class AglobalController extends Controller
             'record_group' => $record_group
         ]);
     }
+
+    public function post_aktifitas(Request $request){
+        // Validasi data yang diperlukan
+        $validated = $request->validate([
+            'nip' => 'required|string',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'uraian' => 'required|string',
+            'rhki_id' => 'nullable|integer',
+            'rhka_id' => 'nullable|integer',
+            'output' => 'nullable|string',
+            'volume' => 'nullable|numeric',
+            'satuan' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        // Insert ke tabel aktifitas_kinerja
+        $insertedId = DB::table('aktifitas_kinerja')->insertGetId([
+            'nip' => $validated['nip'],
+            'tanggal_mulai' => $validated['tanggal_mulai'],
+            'tanggal_selesai' => $validated['tanggal_selesai'],
+            'uraian' => $validated['uraian'],
+            'rhki_id' => $validated['rhki_id'] ?? null,
+            'rhka_id' => $validated['rhka_id'] ?? null,
+            'output' => $validated['output'] ?? null,
+            'volume' => $validated['volume'] ?? null,
+            'satuan' => $validated['satuan'] ?? null,
+            'keterangan' => $validated['keterangan'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Ambil data yang baru saja diinsert
+        $data = DB::table('aktifitas_kinerja')->where('id', $insertedId)->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Aktifitas kinerja berhasil ditambahkan.',
+            'data' => $data
+        ]);
+    }
     // ---END AKTIFITAS KINERJA---  
 
 
@@ -168,8 +221,8 @@ class AglobalController extends Controller
                          'a.rating_hasil_kerja as rating_hasil_kerja',
                          'a.rating_perilaku_kerja as rating_perilaku_kerja',
                          'a.predikat_kinerja as predikat_kinerja',
-                         'a.poin as poin'
-
+                         'a.poin as poin',
+                         'a.bobot_persen as bobot_persen'
                          )
                 ->where('a.penilai_nip', $nip_penilai)
                 ->where('a.tahun', $tahun)
@@ -343,10 +396,29 @@ class AglobalController extends Controller
                 ->where('nip', $nip)
                 ->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai])
                 ->get();
+
         $total_poin = $data->sum('poin');
+
+        $hk_ae = $data->where('rating_hasil_kerja','AE')->count();
+        $hk_se = $data->where('rating_hasil_kerja','SE')->count();
+        $hk_be = $data->where('rating_hasil_kerja','BE')->count();
+
+        $total_aktifitas = $data->count();
+        $total_aktifitas_dinilai = $data->whereNotIn('rating_hasil_kerja', ['BM'])->count();
+
+        $bobot_nilai = $total_aktifitas * 2;
+
+        $bobot_persen = $bobot_nilai > 0 ? number_format(($total_poin / $bobot_nilai) * 100, 2, '.', '') : 0;
+
         return response()->json([
             'success' => true,
-            'data' => $total_poin
+            'data' => $total_poin,
+            'hk_ae' => $hk_ae,
+            'hk_se' => $hk_se,
+            'hk_be' => $hk_be,
+            'jml_aktifitas_dinilai' => $total_aktifitas_dinilai,
+            'total_aktifitas' => $total_aktifitas,
+            'bobot_persen' => $bobot_persen
         ]);
     }
 
@@ -374,6 +446,12 @@ class AglobalController extends Controller
         $rating_perilaku_kerja = $request->rating_perilaku_kerja; 
         $predikat_kinerja = $request->predikat_kinerja;
         $poin = $request->poin;
+
+        $hk_ae = $request->hk_ae;
+        $hk_se = $request->hk_se;
+        $hk_be = $request->hk_be;
+        $bobot_persen = $request->bobot_persen;
+
 
         // Validate input data
         if (empty($uid)) {
@@ -409,6 +487,18 @@ class AglobalController extends Controller
             }
             if (!empty($poin)) {
                 $updateData['poin'] = $poin;
+            }
+            if (!empty($hk_ae)) {
+                $updateData['hk_ae'] = $hk_ae;
+            }
+            if (!empty($hk_se)) {
+                $updateData['hk_se'] = $hk_se;
+            }
+            if (!empty($hk_be)) {
+                $updateData['hk_be'] = $hk_be;
+            }
+            if (!empty($bobot_persen)) {
+                $updateData['bobot_persen'] = $bobot_persen;
             }
 
             // Only update if there are fields to update
