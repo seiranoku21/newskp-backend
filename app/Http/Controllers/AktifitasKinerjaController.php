@@ -90,27 +90,39 @@ class AktifitasKinerjaController extends Controller
 	 * @param string $rec_id //select record by table primary key
      * @return \Illuminate\View\View;
      */
-	function edit(AktifitasKinerjaEditRequest $request, $rec_id = null){
-		$query = AktifitasKinerja::query();
-		$record = $query->findOrFail($rec_id, AktifitasKinerja::editFields());
-		if ($request->isMethod('post')) {
-			$modeldata = $request->validated();
-		
-		if( array_key_exists("dokumen", $modeldata) ){
-			//move uploaded file from temp directory to destination directory
-			$fileInfo = $this->moveUploadedFiles($modeldata['dokumen'], "dokumen");
-			$modeldata['dokumen'] = $fileInfo['filepath'];
-		}
-		
-		if( array_key_exists("gambar", $modeldata) ){
-			//move uploaded file from temp directory to destination directory
-			$fileInfo = $this->moveUploadedFiles($modeldata['gambar'], "gambar");
-			$modeldata['gambar'] = $fileInfo['filepath'];
-		}
-			$record->update($modeldata);
-		}
-		return $this->respond($record);
-	}
+    function edit(AktifitasKinerjaEditRequest $request, $rec_id = null){
+        $query = AktifitasKinerja::query();
+        $record = $query->findOrFail($rec_id, AktifitasKinerja::editFields());
+        if ($request->isMethod('post') || $request->isMethod('put') || $request->isMethod('patch')) {
+            $modeldata = $request->validated();
+
+            // Support direct multipart file uploads for PUT/PATCH/POST
+            if ($request->hasFile('dokumen')) {
+                $file = $request->file('dokumen');
+                $filename = uniqid('dokumen_') . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('uploads/files', $filename, 'public');
+                $modeldata['dokumen'] = '' . $path;
+            } elseif (array_key_exists('dokumen', $modeldata) && !empty($modeldata['dokumen'])) {
+                // Move uploaded file from temp directory to destination directory (legacy flow)
+                $fileInfo = $this->moveUploadedFiles($modeldata['dokumen'], 'dokumen');
+                $modeldata['dokumen'] = $fileInfo['filepath'];
+            }
+
+            if ($request->hasFile('gambar')) {
+                $file = $request->file('gambar');
+                $filename = uniqid('gambar_') . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('uploads/files/gambar', $filename, 'public');
+                $modeldata['gambar'] = '' . $path;
+            } elseif (array_key_exists('gambar', $modeldata) && !empty($modeldata['gambar'])) {
+                // Move uploaded file from temp directory to destination directory (legacy flow)
+                $fileInfo = $this->moveUploadedFiles($modeldata['gambar'], 'gambar');
+                $modeldata['gambar'] = $fileInfo['filepath'];
+            }
+
+            $record->update($modeldata);
+        }
+        return $this->respond($record);
+    }
 
 	// Untuk Verifikasi lebih dari 1 ( Array )
 	function editvrf(AktifitasKinerjaEditVrfRequest $request, $rec_id = null){
@@ -150,6 +162,75 @@ class AktifitasKinerjaController extends Controller
 		$query->whereIn("id", $arr_id);
 		$query->delete();
 		return $this->respond($arr_id);
+	}
+
+	function tambah_aktifitas(Request $request){
+		// Validasi input
+		$validated = $request->validate([
+			'nip' => 'required|string',
+			'rhki_id' => 'required|integer',
+			'tanggal_mulai' => 'required|date',
+			'tanggal_selesai' => 'nullable|date',
+			'jumlah' => 'required|numeric',
+			'satuan' => 'nullable|string',
+			'gambar' => 'nullable|file|mimes:jpg,jpeg,png|max:3072', // 3MB
+			'dokumen' => 'nullable|file|mimes:pdf|max:3072', // 3MB
+			'tautan' => 'nullable|string',
+			'portofolio_kinerja_uid' => 'nullable'
+		]);
+
+		// Ambil rhka_id dan portofolio_kinerja_uid dari rhki_id
+		$rhka_id = \DB::table('rencana_hasil_kerja_item')->where('id', $validated['rhki_id'])->value('rhka_id');
+		$portofolio_kinerja_uid_from_rhki = \DB::table('rencana_hasil_kerja_item')->where('id', $validated['rhki_id'])->value('portofolio_kinerja_uid');
+
+		// Gunakan portofolio_kinerja_uid dari input jika ada, jika tidak dari rhki_id
+		$portofolio_kinerja_uid = $validated['portofolio_kinerja_uid'] ?? $portofolio_kinerja_uid_from_rhki;
+
+		// Ambil tahun jika portofolio_kinerja_uid tersedia, jika tidak null
+		$tahun = null;
+		if (!empty($portofolio_kinerja_uid)) {
+			$tahun = \DB::table('portofolio_kinerja')->where('uid', $portofolio_kinerja_uid)->value('tahun');
+		}
+
+		$data = [
+			'nip' => $validated['nip'],
+			'rhki_id' => $validated['rhki_id'],
+			'rhka_id' => $rhka_id,
+			'portofolio_kinerja_uid' => $portofolio_kinerja_uid,
+			'tahun' => $tahun,
+			'tanggal_mulai' => $validated['tanggal_mulai'],
+			'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
+			'jumlah' => $validated['jumlah'],
+			'satuan' => $validated['satuan'] ?? null,
+			'gambar' => null,
+			'dokumen' => null,
+			'tautan' => $validated['tautan'] ?? null,
+		];
+
+		// Proses upload gambar jika ada
+		if ($request->hasFile('gambar')) {
+			$file = $request->file('gambar');
+			$filename = uniqid('gambar_') . '.' . $file->getClientOriginalExtension();
+			$path = $file->storeAs('uploads/files/gambar', $filename, 'public');
+			$data['gambar'] = '' . $path;
+		}
+
+		// Proses upload dokumen jika ada
+		if ($request->hasFile('dokumen')) {
+			$file = $request->file('dokumen');
+			$filename = uniqid('dokumen_') . '.' . $file->getClientOriginalExtension();
+			$path = $file->storeAs('uploads/files', $filename, 'public');
+			$data['dokumen'] = '' . $path;
+		}
+
+		// Insert ke database
+		$aktifitas = \App\Models\AktifitasKinerja::create($data);
+
+		return response()->json([
+			'success' => true,
+			'message' => 'Data aktifitas kinerja berhasil ditambahkan',
+			'data' => $aktifitas
+		], 201);
 	}
 
 }

@@ -26,12 +26,12 @@ class AktifitasKinerjaAddRequest extends FormRequest
         return [
             
 				"rhki_id" => "required",
-				"rhka_id" => "required",
-				"portofolio_kinerja_uid" => "required",
+				// "rhka_id" => "required",
+				// "portofolio_kinerja_uid" => "required",
 				"nip" => "required|string",
 				"tanggal_mulai" => "required|date",
 				"tanggal_selesai" => "nullable|date",
-				"tahun" => "required|numeric",
+				// "tahun" => "required|numeric",
 				"jumlah" => "required|numeric",
 				"satuan" => "nullable",
 				"dokumen" => "nullable",

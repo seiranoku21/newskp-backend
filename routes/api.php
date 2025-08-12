@@ -20,8 +20,13 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     // ---INTEGRASI
 
     Route::get('portofolio', 'AglobalController@get_portofolio');
+    Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
     Route::get('aktifitas', 'AglobalController@get_aktifitas');	
-    Route::post('aktifitas/add', 'AktifitasKinerjaController@add');	
+    Route::post('aktifitas/add', 'AktifitasKinerjaController@tambah_aktifitas');	
+    Route::match(['post','put','patch'], 'aktifitas/edit/{rec_id}', 'AktifitasKinerjaController@edit'); 	
+    Route::any('aktifitas/delete/{rec_id}', 'AktifitasKinerjaController@delete');
+
+    Route::get('list_ajuan_skp', 'AglobalController@list_ajuan_skp');
     
     // ---END INTEGRASI
 
@@ -249,4 +254,11 @@ Route::post('fileuploader/upload/{fieldname}', 'FileUploaderController@upload');
 Route::post('fileuploader/s3upload/{fieldname}', 'FileUploaderController@s3upload');
 Route::post('fileuploader/remove_temp_file', 'FileUploaderController@remove_temp_file');
 
-	
+//  ---REFERENSI
+Route::get('ref_periode', 'AglobalController@ref_periode');
+Route::get('ref_satuan', 'AglobalController@ref_satuan');
+Route::get('ref_hasilkerja', 'AglobalController@ref_hasil_kerja');
+Route::get('ref_predikat', 'AglobalController@ref_predikat');
+Route::get('ref_status', 'AglobalController@ref_status');
+Route::get('ref_status_vrf', 'AglobalController@ref_status_vrf');
+Route::get('ref_tipe_skp', 'AglobalController@ref_tipe_skp');

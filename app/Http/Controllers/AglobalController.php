@@ -10,7 +10,7 @@ use DB;
 
 class AglobalController extends Controller
 {   
-    // ---PEGAWAI---
+    // ---PEGAWAI START---
     public function get_pegawai_by_nip(Request $request){
         $nip = $request->nip;
         $pegawai = SimpegController::pegawai($nip);
@@ -27,9 +27,9 @@ class AglobalController extends Controller
         $riwayat_jabatan = SimpegController::riwayat_jabatan($nip);
         return $riwayat_jabatan;
     }
-    // ---END PEGAWAI---
+    // ---PEGAWAI END---
 
-    // ---PERIODE---
+    // ---PERIODE START---
     public function periode_rentang_bln(Request $request){
         $periode_id = $request->periode_id;
         $tahun = $request->tahun ?? date('Y'); // Use current year if not provided
@@ -57,9 +57,9 @@ class AglobalController extends Controller
 
         return response()->json($result);
     }
-    // ---END PERIODE---
+    // ---PERIODE END---
 
-    // ---PERILAKU KERJA---
+    // ---PERILAKU KERJA START---
     public function get_ekspektasi_pimpinan(Request $request){
         $uid = $request->uid;
         $kode_pk = $request->kode_pk;
@@ -70,19 +70,43 @@ class AglobalController extends Controller
                 ->first();
         return $data;
     }
-    // ---END PERILAKU KERJA---
+    // ---PERILAKU KERJA END---
 
-    // ---PORTFOLIO KINERJA---
-
-    // ---PORTFOLIO KINERJA---
+    // ---PORTFOLIO KINERJA START---
 
     public function get_portofolio(Request $request){
         $nip = $request->nip;
-        $data = DB::table('portofolio_kinerja')
-                ->select('id','uid',DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'jabatan','unit_kerja')            
-                ->where('nip', $nip)
-                ->get()
-                ->toArray();
+        $uid = $request->uid;
+
+        $query = DB::table('portofolio_kinerja')
+            ->select(
+                'id',
+                'uid',
+                DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),
+                'nip',
+                'nama',
+                'jabatan_struktural',
+                'jabatan_struktural_id',
+                'jabatan_fungsional',
+                'jabatan_fungsional_id',
+                'unit_kerja',
+                'unit_kerja_id',
+                'homebase',
+                'homebase_id',
+                'pangkat',
+                'pangkat_id',
+                'status_kerja'
+            );
+
+        // Filter
+        if (!empty($nip)) {
+            $query->where('nip', $nip);
+        }
+        if (!empty($uid)) {
+            $query->where('uid', $uid);
+        }
+
+        $data = $query->get()->toArray();
         return $data;
     }
 
@@ -104,77 +128,140 @@ class AglobalController extends Controller
                 ->first();
         return $data;
     }   
-    // ---END PORTFOLIO KINERJA---
+    // ---PORTFOLIO KINERJA END---
+
+    // ---RUBRIK KEGIATAN START
+
+    public function rubrik_kegiatan_rhki(Request $request){
+        $nip = $request->nip;
+        $portofolio_uid = $request->portofolio_uid;
+
+        $query = DB::table('rencana_hasil_kerja_item')
+                ->select(
+                    'id as rhki_id',
+                    'kegiatan',
+                    'nip',
+                    'portofolio_kinerja_uid as portofolio_uid'
+                );
+        // Filter
+        if (!empty($nip)) {
+             $query->where('nip', $nip);
+        }
+        if (!empty($portofolio_uid)) {
+            $query->where('portofolio_kinerja_uid', $portofolio_uid);
+        }
+
+        $data = $query->get()->toArray();
+        return $data;
+        
+        
+    }
+
+    // ---RUBRIK KEGIATAN END
 
     // ---AKTIFITAS KINERJA---
     public function get_aktifitas(Request $request){
-        $nip = $request->nip;
-        $query = DB::table('aktifitas_kinerja as a');
-        $query->leftJoin('rencana_hasil_kerja_item as b', 'a.rhki_id', '=', 'b.id');    
-        $query->leftJoin('rencana_hasil_kerja_atasan as c', 'a.rhka_id', '=', 'c.id');
-        $query->select('a.*', 'b.kegiatan as kegiatan', 'c.kategori as kategori');
-        $query->where('a.nip', $nip);
-        
-        if($request->has('tanggal_mulai') && $request->has('tanggal_selesai')){
-            $tanggal_mulai = $request->tanggal_mulai;
-            $tanggal_selesai = $request->tanggal_selesai;
-            $query->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai]);
+        try {
+            $nip = $request->nip;
+            $perPage = $request->input('per_page', 50); // default 50
+            $page = $request->input('page', 1);
+
+            if (empty($nip)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'NIP harus diisi',
+                    'data' => [],
+                    'jml_data' => 0,
+                    'pagination' => [
+                        'current_page' => (int)$page,
+                        'per_page' => (int)$perPage,
+                        'total' => 0,
+                        'last_page' => 0,
+                    ]
+                ], 400);
+            }
+
+            $query = DB::table('aktifitas_kinerja as a');
+            $query->leftJoin('rencana_hasil_kerja_item as b', 'a.rhki_id', '=', 'b.id');    
+            $query->leftJoin('rencana_hasil_kerja_atasan as c', 'a.rhka_id', '=', 'c.id');
+            $query->select(
+                        'a.id',
+                        'a.rhki_id',
+                        'b.kegiatan',
+                        'c.kategori',
+                        'a.tanggal_mulai',
+                        'a.tanggal_selesai',
+                        'a.jumlah',
+                        'a.satuan',
+                        'a.gambar',
+                        'a.dokumen',
+                        'a.tautan',
+                        'a.rating_hasil_kerja',
+                        'a.poin',
+                        'a.portofolio_kinerja_uid as portofolio_uid',
+                        'a.rhka_id'
+            );
+            $query->where('a.nip', $nip);
+            
+            if($request->has('tanggal_mulai') && $request->has('tanggal_selesai')){
+                $tanggal_mulai = $request->tanggal_mulai;
+                $tanggal_selesai = $request->tanggal_selesai;
+                $query->whereBetween('tanggal_mulai', [$tanggal_mulai, $tanggal_selesai]);
+            }
+
+            $jml_data = $query->count();
+
+            // Pagination
+            $data = $query->forPage($page, $perPage)->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'sukses',
+                'jml_data' => $jml_data,
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => (int)$page,
+                    'per_page' => (int)$perPage,
+                    'total' => $jml_data,
+                    'last_page' => ceil($jml_data / $perPage),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error get_aktifitas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => [],
+                'jml_data' => 0,
+                'pagination' => [
+                    'current_page' => (int)($request->input('page', 1)),
+                    'per_page' => (int)($request->input('per_page', 10)),
+                    'total' => 0,
+                    'last_page' => 0,
+                ]
+            ], 500);
         }
-
-        // Get grouped records with all columns included in GROUP BY
-        $record_group = DB::table('aktifitas_kinerja as a')
-            ->leftJoin('rencana_hasil_kerja_item as b', 'a.rhki_id', '=', 'b.id')
-            ->leftJoin('rencana_hasil_kerja_atasan as c', 'a.rhka_id', '=', 'c.id')
-            ->select('a.rhki_id', 
-                     'b.kegiatan', 
-                     'b.ukuran_keberhasilan',
-                     'b.realisasi',
-                     'c.kategori'
-                     )
-            ->where('a.nip', $nip)
-            ->when($request->has('tanggal_mulai') && $request->has('tanggal_selesai'), function($query) use ($request) {
-                return $query->whereBetween('a.tanggal_mulai', [$request->tanggal_mulai, $request->tanggal_selesai]);
-            })
-            ->groupBy('a.rhki_id', 'b.kegiatan', 'b.ukuran_keberhasilan', 'b.realisasi', 'c.kategori')
-            ->get();
-
-        $jml_data = $query->count();
-        $data = $query->get();  
-
-        return response()->json([
-            'jml_data' => $jml_data,
-            'records' => $data,
-            'record_group' => $record_group
-        ]);
     }
 
     public function post_aktifitas(Request $request){
         // Validasi data yang diperlukan
         $validated = $request->validate([
             'nip' => 'required|string',
+            'rhki_id' => 'nullable|integer',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date',
-            'uraian' => 'required|string',
-            'rhki_id' => 'nullable|integer',
-            'rhka_id' => 'nullable|integer',
-            'output' => 'nullable|string',
-            'volume' => 'nullable|numeric',
+            'jumlah' => 'nullable|numeric',
             'satuan' => 'nullable|string',
-            'keterangan' => 'nullable|string',
+
         ]);
 
         // Insert ke tabel aktifitas_kinerja
         $insertedId = DB::table('aktifitas_kinerja')->insertGetId([
             'nip' => $validated['nip'],
+            'rhki_id' => $validated['rhki_id'] ?? null,
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'],
-            'uraian' => $validated['uraian'],
-            'rhki_id' => $validated['rhki_id'] ?? null,
-            'rhka_id' => $validated['rhka_id'] ?? null,
-            'output' => $validated['output'] ?? null,
-            'volume' => $validated['volume'] ?? null,
             'satuan' => $validated['satuan'] ?? null,
-            'keterangan' => $validated['keterangan'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -188,10 +275,11 @@ class AglobalController extends Controller
             'data' => $data
         ]);
     }
-    // ---END AKTIFITAS KINERJA---  
+
+    // ---AKTIFITAS KINERJA END---  
 
 
-    // ---VERIFIKASI---
+    // ---VERIFIKASI START---
     public function vrf_listing(Request $request){
         $nip_penilai = $request->nip_penilai;
         $tahun = $request->tahun;
@@ -622,9 +710,9 @@ class AglobalController extends Controller
         ]);
     }
 
-    // ---END VERIFIKASI---
+    // ---VERIFIKASI END---
 
-    // ---ADMIN---
+    // ---ADMIN START---
     function listing_vrf(Request $request){
         $tahun = $request->tahun;       
         $periode_id = $request->periode_id;
@@ -653,9 +741,9 @@ class AglobalController extends Controller
             'jml_data' => $jml_data
         ]);
     }
-    // ---END ADMIN---
+    // ---ADMIN END---
 
-    // ---KONTRAK KINERJA SKP---
+    // ---KONTRAK KINERJA SKP START---
     
     function get_skp_kontrak(Request $request){
         $uid = $request->skp_kontrak_uid;
@@ -666,9 +754,64 @@ class AglobalController extends Controller
         return $data;
             
     }
-    // ---END KONTRAK KINERJA SKP
+    // ---KONTRAK KINERJA SKP END---
 
-    // ---REFERENSI--
+    // ---AJUAN SKP START---
+
+    function list_ajuan_skp(Request $request){
+        $nip = $request->nip;
+        $rate_sts = [
+            'AE' => 'DIATAS EKPEKTASI',
+            'SE' => 'SESUAI EKPEKTASI',
+            'BE' => 'DIBAWAH EKPEKTASI'
+        ];
+        $data = DB::table('skp_kontrak as a')
+                ->join('ref_skp_tipe as b', 'b.id','=','a.skp_tipe_id')
+                ->join('ref_periode as c', 'c.id','=','a.periode_id')
+                ->join('ref_status as d', 'd.id','=','a.status_id' )
+                ->join('ref_status_vrf as e','e.id','=','a.status_vrf_id')
+                ->select(
+                    'a.id',
+                    'a.uid',
+                    'a.tahun',
+                    'a.skp_tipe_id',
+                    'b.skp_tipe',
+                    'a.periode_id',
+                    'c.periode',
+                    'c.rentang as periode_rentang',
+                    'a.periode_awal',
+                    'a.periode_akhir',
+                    'a.pegawai_nip',
+                    'a.pegawai_nama',
+                    'a.penilai_nip',
+                    'a.penilai_nama',
+                    'a.status_id',
+                    'd.status',
+                    'a.status_vrf_id',
+                    'e.status_vrf',
+                    DB::raw("CASE a.rating_hasil_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE a.rating_hasil_kerja END as rating_hasil_kerja"),
+                    DB::raw("CASE a.rating_perilaku_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE a.rating_perilaku_kerja END as rating_perilaku_kerja"),
+                    'a.predikat_kinerja',
+                    'a.poin',
+                    'a.bobot_persen'
+                )
+                ->where('pegawai_nip', $nip)
+                ->get();
+
+        return $data;
+    }
+
+    // ---REFERENSI START--
+
+    // --Perilaku Kerja
     public function ref_perilaku_kerja(){
         $data = DB::table('ref_perilaku_kerja')
                 ->select('ref_perilaku_kerja.*')
@@ -690,6 +833,7 @@ class AglobalController extends Controller
         return $data;
     }
 
+    //  ---Hasil Kerja
     public function ref_hasil_kerja(Request $request){
         $kode = $request->kode;
         $data = DB::table('ref_hasil_kerja')
@@ -698,6 +842,50 @@ class AglobalController extends Controller
                 ->first();
         return $data;
     }
-    // ---END REFERENSI--
+
+    //  ---Satuan
+    public function ref_satuan(Request $request){
+        $data = DB::table('ref_satuan')
+                ->select('okgId as id','okgNama as satuan')
+                ->get();
+        return $data;
+    }
+
+    //  ---Periode
+    public function ref_periode(Request $request){
+        $data = DB::table('ref_periode')
+                ->get();
+        return $data;
+    }
+
+    //  ---Predikat
+    public function ref_predikat(Request $request){
+        $data = DB::table('ref_predikat')
+                ->get();
+        return $data;
+    }
+
+    //  ---Status Ajuan
+    public function ref_status(Request $request){
+        $data = DB::table('ref_status')
+                ->get();
+        return $data;
+    }
+
+    //  ---Status Verifikasi
+    public function ref_status_vrf(Request $request){
+        $data = DB::table('ref_status_vrf')
+                ->get();
+        return $data;
+    }
+
+    //  ---SKP Tipe
+    public function ref_tipe_skp(Request $request){
+        $data = DB::table('ref_skp_tipe')
+                ->get();
+        return $data;
+    }
+
+    // ---REFERENSI END--
 
 }
