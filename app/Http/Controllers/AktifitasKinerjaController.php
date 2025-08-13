@@ -100,8 +100,12 @@ class AktifitasKinerjaController extends Controller
             if ($request->hasFile('dokumen')) {
                 $file = $request->file('dokumen');
                 $filename = uniqid('dokumen_') . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('uploads/files', $filename, 'public');
-                $modeldata['dokumen'] = '' . $path;
+                $destinationPath = public_path('uploads/files/');
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0777, true);
+                }
+                $file->move($destinationPath, $filename);
+                $modeldata['dokumen'] = 'uploads/files/' . $filename;
             } elseif (array_key_exists('dokumen', $modeldata) && !empty($modeldata['dokumen'])) {
                 // Move uploaded file from temp directory to destination directory (legacy flow)
                 $fileInfo = $this->moveUploadedFiles($modeldata['dokumen'], 'dokumen');
@@ -111,8 +115,12 @@ class AktifitasKinerjaController extends Controller
             if ($request->hasFile('gambar')) {
                 $file = $request->file('gambar');
                 $filename = uniqid('gambar_') . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('uploads/files/gambar', $filename, 'public');
-                $modeldata['gambar'] = '' . $path;
+                $destinationPath = public_path('uploads/files/gambar/');
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0777, true);
+                }
+                $file->move($destinationPath, $filename);
+                $modeldata['gambar'] = 'uploads/files/gambar/' . $filename;
             } elseif (array_key_exists('gambar', $modeldata) && !empty($modeldata['gambar'])) {
                 // Move uploaded file from temp directory to destination directory (legacy flow)
                 $fileInfo = $this->moveUploadedFiles($modeldata['gambar'], 'gambar');
