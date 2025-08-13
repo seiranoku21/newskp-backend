@@ -211,16 +211,24 @@ class AktifitasKinerjaController extends Controller
 		if ($request->hasFile('gambar')) {
 			$file = $request->file('gambar');
 			$filename = uniqid('gambar_') . '.' . $file->getClientOriginalExtension();
-			$path = $file->storeAs('uploads/files/gambar', $filename, 'public');
-			$data['gambar'] = '' . $path;
+			$destinationPath = public_path('uploads/files/gambar/');
+			if (!file_exists($destinationPath)) {
+				mkdir($destinationPath, 0777, true);
+			}
+			$file->move($destinationPath, $filename);
+			$data['gambar'] = 'uploads/files/gambar/' . $filename;
 		}
 
 		// Proses upload dokumen jika ada
 		if ($request->hasFile('dokumen')) {
 			$file = $request->file('dokumen');
 			$filename = uniqid('dokumen_') . '.' . $file->getClientOriginalExtension();
-			$path = $file->storeAs('uploads/files', $filename, 'public');
-			$data['dokumen'] = '' . $path;
+			$destinationPath = public_path('uploads/files/');
+			if (!file_exists($destinationPath)) {
+				mkdir($destinationPath, 0777, true);
+			}
+			$file->move($destinationPath, $filename);
+			$data['dokumen'] = 'uploads/files/' . $filename;
 		}
 
 		// Insert ke database
