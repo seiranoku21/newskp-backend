@@ -82,8 +82,10 @@ class AglobalController extends Controller
             ->select(
                 'id',
                 'uid',
+                'tahun',
                 DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),
                 'nip',
+                'email',
                 'nama',
                 'jabatan_struktural',
                 'jabatan_struktural_id',
