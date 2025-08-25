@@ -28,6 +28,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     Route::get('list_ajuan_skp', 'AglobalController@list_ajuan_skp');
     Route::post('ajuan_skp/add', 'SkpKontrakController@tambah_ajuan');
+    Route::any('ajuan_skp/delete/{rec_id}', 'SkpKontrakController@delete');
     
     // ---END INTEGRASI
 

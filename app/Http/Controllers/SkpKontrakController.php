@@ -199,7 +199,9 @@ class SkpKontrakController extends Controller
 			'penilai_jabatan_id'	=> $penilai_jabatan_id,
 			'penilai_jabatan'		=> $penilai_jabatan,
 			'penilai_unit_kerja_id' => $penilai_unit_kerja_id,
-			'penilai_unit_kerja' => $penilai_unit_kerja
+			'penilai_unit_kerja' 	=> $penilai_unit_kerja,
+			// Status
+			'status_id'				=> 2
 		];
 		// Insert ke tabel skp_kontrak
 		$id = \DB::table('skp_kontrak')->insertGetId($data);
