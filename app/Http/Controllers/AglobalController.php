@@ -78,6 +78,7 @@ class AglobalController extends Controller
         $nip = $request->nip;
         $uid = $request->uid;
 
+        // Ambil data portofolio_kinerja
         $query = DB::table('portofolio_kinerja')
             ->select(
                 'id',
@@ -108,8 +109,48 @@ class AglobalController extends Controller
             $query->where('uid', $uid);
         }
 
-        $data = $query->get()->toArray();
-        return $data;
+        $portofolios = $query->get();
+
+        // Untuk setiap portofolio, ambil detail_rubrik_kinerja dari rencana_hasil_kerja_atasan
+        $result = [];
+        foreach ($portofolios as $item) {
+            $detail_rubrik_kinerja = DB::table('rencana_hasil_kerja_atasan')
+                ->select('id','rubrik_kinerja', 'kategori')
+                ->where('portofolio_kinerja_uid', $item->uid)
+                ->get()
+                ->map(function($row){
+                    return [
+                        'id' => $row->id,
+                        'rubrik_kinerja' => $row->rubrik_kinerja,
+                        'kategori' => $row->kategori
+                    ];
+                })
+                ->toArray();
+
+            $result[] = [
+                "id" => $item->id,
+                "uid" => $item->uid,
+                "tahun" => $item->tahun,
+                "no_poki" => $item->no_poki,
+                "nip" => $item->nip,
+                "email" => $item->email,
+                "nama" => $item->nama,
+                "jabatan_struktural" => $item->jabatan_struktural,
+                "jabatan_struktural_id" => $item->jabatan_struktural_id,
+                "jabatan_fungsional" => $item->jabatan_fungsional,
+                "jabatan_fungsional_id" => $item->jabatan_fungsional_id,
+                "unit_kerja" => $item->unit_kerja,
+                "unit_kerja_id" => $item->unit_kerja_id,
+                "homebase" => $item->homebase,
+                "homebase_id" => $item->homebase_id,
+                "pangkat" => $item->pangkat,
+                "pangkat_id" => $item->pangkat_id,
+                "status_kerja" => $item->status_kerja,
+                "detail_rubrik_kinerja" => $detail_rubrik_kinerja
+            ];
+        }
+
+        return response()->json($result);
     }
 
     public function get_portofolio_by_nip(Request $request){
