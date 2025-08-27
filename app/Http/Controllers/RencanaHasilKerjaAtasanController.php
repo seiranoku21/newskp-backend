@@ -86,4 +86,85 @@ class RencanaHasilKerjaAtasanController extends Controller
 		$query->delete();
 		return $this->respond($arr_id);
 	}
+
+	function list_rhka(Request $request){
+		$portofolio_kinerja_uid = $request->portofolio_kinerja_uid;
+		$data = \DB::table('rencana_hasil_kerja_atasan')
+				->where('portofolio_kinerja_uid',$portofolio_kinerja_uid)
+				->get();
+		return $data;
+	}
+
+ 	function tambah_rhka(Request $request){
+		// Validasi input
+		$validated = $request->validate([
+			'portofolio_kinerja_uid' => 'required|string',
+			'nip' => 'required|string',
+			'rubrik_kinerja' => 'required|string',
+			'kategori' => 'required|in:utama,tambahan',
+		]);
+
+		try {
+			$record = \App\Models\RencanaHasilKerjaAtasan::create($validated);
+			return response()->json([
+				'success' => true,
+				'message' => 'Data berhasil ditambahkan',
+				'data' => $record
+			], 201);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Gagal menambahkan data: ' . $e->getMessage(),
+			], 500);
+		}
+	}
+
+	function ubah_rhka(Request $request, $rec_id = null){
+		// Validasi input
+		$validated = $request->validate([
+			'rubrik_kinerja' => 'sometimes|required|string',
+			'kategori' => 'sometimes|required|in:utama,tambahan',
+		]);
+
+		try {
+			if (!$rec_id) {
+				return response()->json([
+					'success' => false,
+					'message' => 'ID data tidak ditemukan.',
+				], 400);
+			}
+
+			$record = \App\Models\RencanaHasilKerjaAtasan::findOrFail($rec_id);
+
+			// Hanya update rubrik_kinerja dan/atau kategori jika ada di input
+			$updateData = [];
+			if (array_key_exists('rubrik_kinerja', $validated)) {
+				$updateData['rubrik_kinerja'] = $validated['rubrik_kinerja'];
+			}
+			if (array_key_exists('kategori', $validated)) {
+				$updateData['kategori'] = $validated['kategori'];
+			}
+
+			if (empty($updateData)) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Tidak ada data yang diubah. Hanya rubrik_kinerja atau kategori yang dapat diubah.',
+				], 400);
+			}
+
+			$record->update($updateData);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Data berhasil diubah',
+				'data' => $record
+			], 200);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Gagal mengubah data: ' . $e->getMessage(),
+			], 500);
+		}
+	}
+
 }
