@@ -184,7 +184,8 @@ class AglobalController extends Controller
                     'id as rhki_id',
                     'kegiatan',
                     'nip',
-                    'portofolio_kinerja_uid as portofolio_uid'
+                    'portofolio_kinerja_uid as portofolio_uid',
+                    'rhka_id'
                 );
         // Filter
         if (!empty($nip)) {

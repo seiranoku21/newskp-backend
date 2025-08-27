@@ -19,7 +19,12 @@ class AccountController extends Controller{
 	function index(Request $request){
 		$rec_id = Auth::id();
 		$query = Users::query();
-		$query->where("users.user_id", auth()->user()->user_id);
+		$allowedRoles = auth()->user()->hasRole(["admin"]);
+		if(!$allowedRoles){
+			//check if user is the owner of the record.
+			$query->where("users.username", auth()->user()->username);
+		}
+		// $query->where("users.user_id", auth()->user()->user_id);
 		$record = $query->findOrFail($rec_id, Users::accountviewFields());
 		return $this->respond($record);
 	}
