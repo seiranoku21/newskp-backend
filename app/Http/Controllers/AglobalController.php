@@ -957,4 +957,151 @@ class AglobalController extends Controller
 
     // ---REFERENSI END--
 
+    // ---HTML OOUTPUT
+
+    // ---Portofolio
+    public function get_portofolio_html(Request $request){
+        $nip = $request->nip;
+        $uid = $request->uid;
+
+        // Ambil data portofolio_kinerja
+        $query = DB::table('portofolio_kinerja')
+            ->select(
+                'id',
+                'uid',
+                'tahun',
+                DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),
+                DB::raw("CONCAT(id, '-', SUBSTRING(uid, 1, 4)) as no_portofolio"),
+                'no_sk',
+                'nip',
+                'email',
+                'nama',
+                'jabatan_struktural',
+                'jabatan_struktural_id',
+                'jabatan_fungsional',
+                'jabatan_fungsional_id',
+                'unit_kerja',
+                'unit_kerja_id',
+                'homebase',
+                'homebase_id',
+                'pangkat',
+                'pangkat_id',
+                'status_kerja',
+                'level_pegawai'
+            );
+
+        // Filter
+        if (!empty($nip)) {
+            $query->where('nip', $nip);
+        }
+        if (!empty($uid)) {
+            $query->where('uid', $uid);
+        }
+
+        $portofolios = $query->get();
+
+        // Mulai HTML
+        $html = '<style>
+            table.poki-table, table.poki-table th, table.poki-table td { border:1px solid #888; border-collapse:collapse; }
+            table.poki-table { width:100%; margin-bottom:30px; }
+            table.poki-table th, table.poki-table td { padding:6px 10px; font-size:14px; }
+            .poki-title { background:#e3eaff; font-weight:bold; }
+            .rubrik-title { background:#f5f5f5; font-weight:bold; }
+            .kegiatan-title { background:#f0f8ff; }
+            .sub-table { margin:8px 0 8px 0; }
+            .sub-table th, .sub-table td { font-size:13px; }
+        </style>';
+
+        if (count($portofolios) == 0) {
+            $html .= "<div>Tidak ada data portofolio ditemukan.</div>";
+        }
+
+        foreach ($portofolios as $item) {
+            $html .= '<table class="poki-table">';
+            $html .= '<tr class="poki-title"><th colspan="4">Portofolio Kinerja: '.$item->no_poki.'</th></tr>';
+            $html .= '<tr>
+                        <td><b>Tahun</b></td><td>'.$item->tahun.'</td>
+                        <td><b>No SK</b></td><td>'.$item->no_sk.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td><b>NIP</b></td><td>'.$item->nip.'</td>
+                        <td><b>Nama</b></td><td>'.$item->nama.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td><b>Jabatan Struktural</b></td><td>'.$item->jabatan_struktural.'</td>
+                        <td><b>Jabatan Fungsional</b></td><td>'.$item->jabatan_fungsional.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td><b>Unit Kerja</b></td><td>'.$item->unit_kerja.'</td>
+                        <td><b>Homebase</b></td><td>'.$item->homebase.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td><b>Pangkat</b></td><td>'.$item->pangkat.'</td>
+                        <td><b>Status Kerja</b></td><td>'.$item->status_kerja.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td><b>Level Pegawai</b></td><td colspan="3">'.$item->level_pegawai.'</td>
+                      </tr>';
+            $html .= '</table>';
+
+            // Ambil detail rubrik kinerja
+            $detail_rubrik_kinerja = DB::table('rencana_hasil_kerja_atasan')
+                ->select('id','rubrik_kinerja', 'kategori')
+                ->where('portofolio_kinerja_uid', $item->uid)
+                ->get();
+
+            if (count($detail_rubrik_kinerja) > 0) {
+                foreach ($detail_rubrik_kinerja as $rubrik) {
+                    $html .= '<table class="poki-table sub-table">';
+                    $html .= '<tr class="rubrik-title"><th colspan="5">Rubrik Kinerja: '.$rubrik->rubrik_kinerja.' <span style="font-weight:normal;font-size:12px;">('.$rubrik->kategori.')</span></th></tr>';
+                    $html .= '<tr>
+                        <th width="40">No</th>
+                        <th>Kegiatan</th>
+                        <th>Ukuran Keberhasilan</th>
+                        <th>Realisasi</th>
+                        <th>Aspek</th>
+                    </tr>';
+
+                    $detail_kegiatan = DB::table('rencana_hasil_kerja_item')
+                        ->where('rhka_id', $rubrik->id)
+                        ->select('id AS rhki_id',
+                                'rhka_id',
+                                'kegiatan',
+                                'ukuran_keberhasilan',
+                                'realisasi',
+                                'aspek_kuantitas',
+                                'aspek_kualitas',
+                                'aspek_waktu'
+                            )
+                        ->get();
+
+                    if (count($detail_kegiatan) == 0) {
+                        $html .= '<tr><td colspan="5" style="text-align:center;color:#888;">Tidak ada kegiatan</td></tr>';
+                    } else {
+                        $no = 1;
+                        foreach ($detail_kegiatan as $keg) {
+                            $html .= '<tr class="kegiatan-title">';
+                            $html .= '<td style="text-align:center;">'.$no.'</td>';
+                            $html .= '<td>'.$keg->kegiatan.'</td>';
+                            $html .= '<td>'.$keg->ukuran_keberhasilan.'</td>';
+                            $html .= '<td>'.$keg->realisasi.'</td>';
+                            $html .= '<td>
+                                <b>Kuantitas:</b> '.($keg->aspek_kuantitas ?? '-').'<br>
+                                <b>Kualitas:</b> '.($keg->aspek_kualitas ?? '-').'<br>
+                                <b>Waktu:</b> '.($keg->aspek_waktu ?? '-').'
+                            </td>';
+                            $html .= '</tr>';
+                            $no++;
+                        }
+                    }
+                    $html .= '</table>';
+                }
+            } else {
+                $html .= '<div style="margin-bottom:20px;">Tidak ada rubrik kinerja untuk portofolio ini.</div>';
+            }
+        }
+
+        return response($html, 200)->header('Content-Type', 'text/html');
+    }
+
 }
