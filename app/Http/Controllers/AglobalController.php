@@ -85,6 +85,8 @@ class AglobalController extends Controller
                 'uid',
                 'tahun',
                 DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),
+                DB::raw("CONCAT(id, '-', SUBSTRING(uid, 1, 4)) as no_portofolio"),
+                'no_sk',
                 'nip',
                 'email',
                 'nama',
@@ -98,7 +100,8 @@ class AglobalController extends Controller
                 'homebase_id',
                 'pangkat',
                 'pangkat_id',
-                'status_kerja'
+                'status_kerja',
+                'level_pegawai'
             );
 
         // Filter
@@ -122,7 +125,19 @@ class AglobalController extends Controller
                     return [
                         'id' => $row->id,
                         'rubrik_kinerja' => $row->rubrik_kinerja,
-                        'kategori' => $row->kategori
+                        'kategori' => $row->kategori,
+                        'detail_kegiatan' => DB::table('rencana_hasil_kerja_item')
+                            ->where('rhka_id', $row->id)
+                            ->select('id',
+                                    'rhka_id',
+                                    'kegiatan',
+                                    'ukuran_keberhasilan',
+                                    'realisasi',
+                                    'aspek_kuantitas',
+                                    'aspek_kualitas',
+                                    'aspek_waktu'
+                                )
+                            ->get()
                     ];
                 })
                 ->toArray();
@@ -132,6 +147,8 @@ class AglobalController extends Controller
                 "uid" => $item->uid,
                 "tahun" => $item->tahun,
                 "no_poki" => $item->no_poki,
+                "no_portofolio" => $item->no_portofolio,
+                "no_sk" => $item->no_sk,
                 "nip" => $item->nip,
                 "email" => $item->email,
                 "nama" => $item->nama,
@@ -146,6 +163,7 @@ class AglobalController extends Controller
                 "pangkat" => $item->pangkat,
                 "pangkat_id" => $item->pangkat_id,
                 "status_kerja" => $item->status_kerja,
+                "level_pegawai" => $item->level_pegawai,
                 "detail_rubrik_kinerja" => $detail_rubrik_kinerja
             ];
         }
