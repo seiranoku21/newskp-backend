@@ -248,7 +248,8 @@ class AglobalController extends Controller
                         'a.rating_hasil_kerja',
                         'a.poin',
                         'a.portofolio_kinerja_uid as portofolio_uid',
-                        'a.rhka_id'
+                        'a.rhka_id',
+                        'b.ukuran_keberhasilan'
             );
             $query->where('a.nip', $nip);
             
