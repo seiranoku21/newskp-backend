@@ -128,7 +128,7 @@ class AglobalController extends Controller
                         'kategori' => $row->kategori,
                         'detail_kegiatan' => DB::table('rencana_hasil_kerja_item')
                             ->where('rhka_id', $row->id)
-                            ->select('id',
+                            ->select('id AS rhki_id',
                                     'rhka_id',
                                     'kegiatan',
                                     'ukuran_keberhasilan',
