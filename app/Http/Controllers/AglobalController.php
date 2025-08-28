@@ -1010,7 +1010,26 @@ class AglobalController extends Controller
             .kegiatan-title { background:#f0f8ff; }
             .sub-table { margin:8px 0 8px 0; }
             .sub-table th, .sub-table td { font-size:13px; }
+            @media print {
+                .print-btn { display: none !important; }
+            }
         </style>';
+
+        // Tombol cetak (print)
+        $html .= '<div class="print-btn" style="margin-bottom:20px;text-align:right;">
+            <button onclick="window.print()" style="
+                background: #3b82f6;
+                color: #fff;
+                border: none;
+                padding: 8px 18px;
+                border-radius: 4px;
+                font-size: 15px;
+                cursor: pointer;
+                margin-bottom: 10px;
+            ">
+                &#128424; Cetak / Print
+            </button>
+        </div>';
 
         if (count($portofolios) == 0) {
             $html .= "<div>Tidak ada data portofolio ditemukan.</div>";

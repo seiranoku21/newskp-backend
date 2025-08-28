@@ -42,8 +42,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::any('kinerja_rhki/edit/{rec_id}', 'RencanaHasilKerjaItemController@ubah_rhki');	
     Route::any('kinerja_rhki/delete/{rec_id}', 'RencanaHasilKerjaItemController@delete');	
 
-    // ---HTML OUTPUT
-    Route::get('portofolio_html', 'AglobalController@get_portofolio_html');
+    
 
 
     // ---END INTEGRASI
@@ -280,3 +279,6 @@ Route::get('ref_predikat', 'AglobalController@ref_predikat');
 Route::get('ref_status', 'AglobalController@ref_status');
 Route::get('ref_status_vrf', 'AglobalController@ref_status_vrf');
 Route::get('ref_tipe_skp', 'AglobalController@ref_tipe_skp');
+
+// ---HTML OUTPUT
+Route::get('portofolio_html', 'AglobalController@get_portofolio_html');
