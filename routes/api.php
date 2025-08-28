@@ -36,6 +36,13 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::any('kinerja_rhka/edit/{rec_id}', 'RencanaHasilKerjaAtasanController@ubah_rhka');	
     Route::any('kinerja_rhka/delete/{rec_id}', 'RencanaHasilKerjaAtasanController@delete');	
     
+    // ---RHKI
+    Route::get('kinerja_rhkI', 'RencanaHasilKerjaItemController@list_rhki');
+    Route::post('kinerja_rhki/add', 'RencanaHasilKerjaItemController@tambah_rhki');	
+    Route::any('kinerja_rhki/edit/{rec_id}', 'RencanaHasilKerjaItemController@ubah_rhki');	
+    Route::any('kinerja_rhki/delete/{rec_id}', 'RencanaHasilKerjaItemController@delete');	
+
+
     // ---END INTEGRASI
 
 

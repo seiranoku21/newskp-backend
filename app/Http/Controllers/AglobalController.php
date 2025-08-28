@@ -185,7 +185,12 @@ class AglobalController extends Controller
                     'kegiatan',
                     'nip',
                     'portofolio_kinerja_uid as portofolio_uid',
-                    'rhka_id'
+                    'rhka_id',
+                    'ukuran_keberhasilan',
+                    'realisasi',
+                    'aspek_kualitas',
+                    'aspek_kuantitas',
+                    'aspek_waktu'
                 );
         // Filter
         if (!empty($nip)) {
