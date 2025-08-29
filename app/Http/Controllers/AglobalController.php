@@ -1173,62 +1173,69 @@ class AglobalController extends Controller
 
         $portofolios = $query->get();
 
-        // Mulai HTML dengan CDN Tailwind
+        // Mulai HTML dengan CDN Tailwind dan font Poppins
         $html = '<!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
             <title>Portofolio Kinerja</title>
+          
             <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
             <style>
+                body, .table-sm, .table-sm th, .table-sm td, .print-btn, .text-sm, .text-base, .text-xs, .font-bold, .font-semibold, .font-normal, .block, .text-center, .text-left, .text-right, .text-gray-400, .text-gray-500, .text-gray-600, .bg-gray-50, .bg-blue-100, .bg-gray-100, .bg-blue-50, .bg-white, .border, .rounded, .rounded-lg, .shadow-sm, .overflow-x-auto, .mb-4, .mb-5, .mb-8, .px-2, .px-3, .py-1, .py-1.5, .py-2, .w-1\/6, .w-1\/3, .col-no, .cursor-pointer, .border-none, .bg-blue-600, .hover\:bg-blue-700, .text-white, .print-btn, .table-sm th, .table-sm td {
+                    font-family: "Poppins", Arial, Helvetica, sans-serif !important;
+                }
                 @media print {
                     .print-btn { display: none !important; }
                 }
                 .table-sm th, .table-sm td { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; font-size: 0.85rem !important; }
                 .table-sm th { font-size: 0.9rem !important; }
+                /* Kolom No lebar 80px */
+                .col-no { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
             </style>
         </head>
-        <body class="bg-gray-50 p-4 text-sm">';
+        <body class="bg-gray-50 p-4 text-sm" style="font-family: Poppins, Arial, Helvetica, sans-serif;">';
 
         // Tombol cetak (print)
         $html .= '<div class="print-btn mb-5 text-right">
-            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-1.5 rounded text-sm cursor-pointer mb-2">
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-1.5 rounded text-sm cursor-pointer mb-2" style="font-family: Poppins, Arial, Helvetica, sans-serif;">
                 &#128424; Cetak / Print
             </button>
         </div>';
 
         if (count($portofolios) == 0) {
-            $html .= "<div class='text-gray-600 text-sm'>Tidak ada data portofolio ditemukan.</div>";
+            $html .= "<div class='text-gray-600 text-sm' style='font-family: Poppins, Arial, Helvetica, sans-serif;'>Tidak ada data portofolio ditemukan.</div>";
         }
 
         foreach ($portofolios as $item) {
             $html .= '<div class="overflow-x-auto mb-8">';
-            $html .= '<table class="min-w-full border border-gray-300 mb-4 bg-white shadow-sm rounded-lg table-sm text-sm">';
+            $html .= '<table class="min-w-full border border-gray-300 mb-4 bg-white shadow-sm rounded-lg table-sm text-sm" style="font-family: Poppins, Arial, Helvetica, sans-serif;">';
             $html .= '<tr class="bg-blue-100 font-bold text-sm">
-                        <th colspan="4" class="px-3 py-2 text-left text-base">Portofolio Kinerja: '.$item->no_poki.'</th>
+                        <th colspan="4" class="px-3 py-2 text-left text-base" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Portofolio Kinerja: '.$item->no_poki.'</th>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold w-1/6">Tahun</td><td class="border px-3 py-1 w-1/3">'.$item->tahun.'</td>
-                        <td class="border px-3 py-1 font-semibold w-1/6">No SK</td><td class="border px-3 py-1 w-1/3">'.$item->no_sk.'</td>
+                        <td class="border px-3 py-1 font-semibold w-1/6" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Tahun</td><td class="border px-3 py-1 w-1/3" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->tahun.'</td>
+                        <td class="border px-3 py-1 font-semibold w-1/6" style="font-family: Poppins, Arial, Helvetica, sans-serif;">No SK</td><td class="border px-3 py-1 w-1/3" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->no_sk.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold">NIP</td><td class="border px-3 py-1">'.$item->nip.'</td>
-                        <td class="border px-3 py-1 font-semibold">Nama</td><td class="border px-3 py-1">'.$item->nama.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">NIP</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->nip.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Nama</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->nama.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold">Jabatan Struktural</td><td class="border px-3 py-1">'.$item->jabatan_struktural.'</td>
-                        <td class="border px-3 py-1 font-semibold">Jabatan Fungsional</td><td class="border px-3 py-1">'.$item->jabatan_fungsional.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Jabatan Struktural</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->jabatan_struktural.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Jabatan Fungsional</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->jabatan_fungsional.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold">Unit Kerja</td><td class="border px-3 py-1">'.$item->unit_kerja.'</td>
-                        <td class="border px-3 py-1 font-semibold">Homebase</td><td class="border px-3 py-1">'.$item->homebase.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Unit Kerja</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->unit_kerja.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Homebase</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->homebase.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold">Pangkat</td><td class="border px-3 py-1">'.$item->pangkat.'</td>
-                        <td class="border px-3 py-1 font-semibold">Status Kerja</td><td class="border px-3 py-1">'.$item->status_kerja.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Pangkat</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->pangkat.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Status Kerja</td><td class="border px-3 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->status_kerja.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td class="border px-3 py-1 font-semibold">Level Pegawai</td><td class="border px-3 py-1" colspan="3">'.$item->level_pegawai.'</td>
+                        <td class="border px-3 py-1 font-semibold" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Level Pegawai</td><td class="border px-3 py-1" colspan="3" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$item->level_pegawai.'</td>
                       </tr>';
             $html .= '</table>';
 
@@ -1241,16 +1248,16 @@ class AglobalController extends Controller
             if (count($detail_rubrik_kinerja) > 0) {
                 foreach ($detail_rubrik_kinerja as $rubrik) {
                     $html .= '<div class="overflow-x-auto mb-4">';
-                    $html .= '<table class="min-w-full border border-gray-300 bg-white shadow-sm rounded-lg table-sm text-sm">';
+                    $html .= '<table class="min-w-full border border-gray-300 bg-white shadow-sm rounded-lg table-sm text-sm" style="font-family: Poppins, Arial, Helvetica, sans-serif;">';
                     $html .= '<tr class="bg-gray-100 font-bold text-sm">
-                        <th colspan="5" class="px-3 py-2 text-left">Rubrik Kinerja: '.$rubrik->rubrik_kinerja.' <span class="font-normal text-xs text-gray-500">('.$rubrik->kategori.')</span></th>
+                        <th colspan="5" class="px-3 py-2 text-left" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Rubrik Kinerja: '.$rubrik->rubrik_kinerja.' <span class="font-normal text-xs text-gray-500" style="font-family: Poppins, Arial, Helvetica, sans-serif;">('.$rubrik->kategori.')</span></th>
                     </tr>';
                     $html .= '<tr class="bg-gray-50 text-sm">
-                        <th class="border px-2 py-1 w-10">No</th>
-                        <th class="border px-2 py-1">Kegiatan</th>
-                        <th class="border px-2 py-1">Ukuran Keberhasilan</th>
-                        <th class="border px-2 py-1">Realisasi</th>
-                        <th class="border px-2 py-1">Aspek</th>
+                        <th class="border px-2 py-1 col-no text-center" style="font-family: Poppins, Arial, Helvetica, sans-serif;">No</th>
+                        <th class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Kegiatan</th>
+                        <th class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Ukuran Keberhasilan</th>
+                        <th class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Realisasi</th>
+                        <th class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Aspek</th>
                     </tr>';
 
                     $detail_kegiatan = DB::table('rencana_hasil_kerja_item')
@@ -1267,16 +1274,16 @@ class AglobalController extends Controller
                         ->get();
 
                     if (count($detail_kegiatan) == 0) {
-                        $html .= '<tr><td colspan="5" class="text-center text-gray-400 py-2">Tidak ada kegiatan</td></tr>';
+                        $html .= '<tr><td colspan="5" class="text-center text-gray-400 py-2" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Tidak ada kegiatan</td></tr>';
                     } else {
                         $no = 1;
                         foreach ($detail_kegiatan as $keg) {
                             $html .= '<tr class="bg-blue-50">';
-                            $html .= '<td class="border px-2 py-1 text-center">'.$no.'</td>';
-                            $html .= '<td class="border px-2 py-1">'.$keg->kegiatan.'</td>';
-                            $html .= '<td class="border px-2 py-1">'.$keg->ukuran_keberhasilan.'</td>';
-                            $html .= '<td class="border px-2 py-1">'.$keg->realisasi.'</td>';
-                            $html .= '<td class="border px-2 py-1">
+                            $html .= '<td class="border px-2 py-1 text-center col-no" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$no.'</td>';
+                            $html .= '<td class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$keg->kegiatan.'</td>';
+                            $html .= '<td class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$keg->ukuran_keberhasilan.'</td>';
+                            $html .= '<td class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">'.$keg->realisasi.'</td>';
+                            $html .= '<td class="border px-2 py-1" style="font-family: Poppins, Arial, Helvetica, sans-serif;">
                                 <span class="block"><span class="font-semibold">Kuantitas:</span> '.($keg->aspek_kuantitas ?? '-').'</span>
                                 <span class="block"><span class="font-semibold">Kualitas:</span> '.($keg->aspek_kualitas ?? '-').'</span>
                                 <span class="block"><span class="font-semibold">Waktu:</span> '.($keg->aspek_waktu ?? '-').'</span>
@@ -1289,7 +1296,7 @@ class AglobalController extends Controller
                     $html .= '</div>';
                 }
             } else {
-                $html .= '<div class="mb-5 text-gray-500 text-sm">Tidak ada rubrik kinerja untuk portofolio ini.</div>';
+                $html .= '<div class="mb-5 text-gray-500 text-sm" style="font-family: Poppins, Arial, Helvetica, sans-serif;">Tidak ada rubrik kinerja untuk portofolio ini.</div>';
             }
             $html .= '</div>';
         }
@@ -1436,6 +1443,7 @@ class AglobalController extends Controller
         // Buat HTML tabel dengan Tailwind CSS
         $html = '
         <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
             .row-header { background-color: #f3f4f6; font-weight: bold; }
             .kolom-komponen { text-align: left !important; }
