@@ -504,6 +504,31 @@ class AglobalController extends Controller
             }
         }
 
+        // Rekap keseluruhan selama 1 tahun (12 bulan)
+        $rekap_aktifitas_keseluruhan = array_sum($rekap_perbulan);
+        $rekap_poin_keseluruhan = array_sum($rekap_poin_perbulan);
+        $rekap_bobot_poin_keseluruhan = $rekap_poin_keseluruhan / ($rekap_aktifitas_keseluruhan * 2) * 100 ;
+        $rekap_rating_hasil_kerja_ae = 0;
+        foreach ($data as $item) {
+            if (isset($item->rating_hasil_kerja) && $item->rating_hasil_kerja === 'AE') {
+                $rekap_rating_hasil_kerja_ae++;
+            }
+        }
+
+        $rekap_rating_hasil_kerja_se = 0;
+        foreach ($data as $item) {
+            if (isset($item->rating_hasil_kerja) && $item->rating_hasil_kerja === 'SE') {
+                $rekap_rating_hasil_kerja_se++;
+            }
+        }
+
+        $rekap_rating_hasil_kerja_be = 0;
+        foreach ($data as $item) {
+            if (isset($item->rating_hasil_kerja) && $item->rating_hasil_kerja === 'BE') {
+                $rekap_rating_hasil_kerja_be++;
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Data aktifitas kinerja berhasil diambil.',
@@ -514,7 +539,14 @@ class AglobalController extends Controller
             'rekap_bukti_gambar' => $rekap_bukti_gambar,
             'rekap_bukti_dokumen' =>  $rekap_bukti_dokumen,
             'rekap_bukti_tautan' => $rekap_bukti_tautan,
-            'rekap_bobot_poin_perbulan' => $rekap_bobot_poin_perbulan
+            'rekap_bobot_poin_perbulan' => $rekap_bobot_poin_perbulan,
+            'rekap_aktifitas_keseluruhan' => $rekap_aktifitas_keseluruhan,
+            'rekap_poin_keseluruhan' => $rekap_poin_keseluruhan,
+            'rekap_bobot_poin_keseluruhan' => $rekap_bobot_poin_keseluruhan,
+            'rekap_rating_hasil_kerja_ae' => $rekap_rating_hasil_kerja_ae,
+            'rekap_rating_hasil_kerja_se' => $rekap_rating_hasil_kerja_se,
+            'rekap_rating_hasil_kerja_be' => $rekap_rating_hasil_kerja_be
+        
         ]);
     } 
 
