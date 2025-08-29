@@ -1197,12 +1197,7 @@ class AglobalController extends Controller
         </head>
         <body class="bg-gray-50 p-4 text-sm" style="font-family: Poppins, Arial, Helvetica, sans-serif;">';
 
-        // Tombol cetak (print)
-        $html .= '<div class="print-btn mb-5 text-right">
-            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-1.5 rounded text-sm cursor-pointer mb-2" style="font-family: Poppins, Arial, Helvetica, sans-serif;">
-                &#128424; Cetak / Print
-            </button>
-        </div>';
+        // Tombol cetak (print) DIHAPUS
 
         if (count($portofolios) == 0) {
             $html .= "<div class='text-gray-600 text-sm' style='font-family: Poppins, Arial, Helvetica, sans-serif;'>Tidak ada data portofolio ditemukan.</div>";
