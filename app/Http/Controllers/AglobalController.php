@@ -1173,66 +1173,62 @@ class AglobalController extends Controller
 
         $portofolios = $query->get();
 
-        // Mulai HTML
-        $html = '<style>
-            table.poki-table, table.poki-table th, table.poki-table td { border:1px solid #888; border-collapse:collapse; }
-            table.poki-table { width:100%; margin-bottom:30px; }
-            table.poki-table th, table.poki-table td { padding:6px 10px; font-size:14px; }
-            .poki-title { background:#e3eaff; font-weight:bold; }
-            .rubrik-title { background:#f5f5f5; font-weight:bold; }
-            .kegiatan-title { background:#f0f8ff; }
-            .sub-table { margin:8px 0 8px 0; }
-            .sub-table th, .sub-table td { font-size:13px; }
-            @media print {
-                .print-btn { display: none !important; }
-            }
-        </style>';
+        // Mulai HTML dengan CDN Tailwind
+        $html = '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Portofolio Kinerja</title>
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    .print-btn { display: none !important; }
+                }
+                .table-sm th, .table-sm td { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; font-size: 0.85rem !important; }
+                .table-sm th { font-size: 0.9rem !important; }
+            </style>
+        </head>
+        <body class="bg-gray-50 p-4 text-sm">';
 
         // Tombol cetak (print)
-        $html .= '<div class="print-btn" style="margin-bottom:20px;text-align:right;">
-            <button onclick="window.print()" style="
-                background: #3b82f6;
-                color: #fff;
-                border: none;
-                padding: 8px 18px;
-                border-radius: 4px;
-                font-size: 15px;
-                cursor: pointer;
-                margin-bottom: 10px;
-            ">
+        $html .= '<div class="print-btn mb-5 text-right">
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-1.5 rounded text-sm cursor-pointer mb-2">
                 &#128424; Cetak / Print
             </button>
         </div>';
 
         if (count($portofolios) == 0) {
-            $html .= "<div>Tidak ada data portofolio ditemukan.</div>";
+            $html .= "<div class='text-gray-600 text-sm'>Tidak ada data portofolio ditemukan.</div>";
         }
 
         foreach ($portofolios as $item) {
-            $html .= '<table class="poki-table">';
-            $html .= '<tr class="poki-title"><th colspan="4">Portofolio Kinerja: '.$item->no_poki.'</th></tr>';
-            $html .= '<tr>
-                        <td><b>Tahun</b></td><td>'.$item->tahun.'</td>
-                        <td><b>No SK</b></td><td>'.$item->no_sk.'</td>
+            $html .= '<div class="overflow-x-auto mb-8">';
+            $html .= '<table class="min-w-full border border-gray-300 mb-4 bg-white shadow-sm rounded-lg table-sm text-sm">';
+            $html .= '<tr class="bg-blue-100 font-bold text-sm">
+                        <th colspan="4" class="px-3 py-2 text-left text-base">Portofolio Kinerja: '.$item->no_poki.'</th>
                       </tr>';
             $html .= '<tr>
-                        <td><b>NIP</b></td><td>'.$item->nip.'</td>
-                        <td><b>Nama</b></td><td>'.$item->nama.'</td>
+                        <td class="border px-3 py-1 font-semibold w-1/6">Tahun</td><td class="border px-3 py-1 w-1/3">'.$item->tahun.'</td>
+                        <td class="border px-3 py-1 font-semibold w-1/6">No SK</td><td class="border px-3 py-1 w-1/3">'.$item->no_sk.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td><b>Jabatan Struktural</b></td><td>'.$item->jabatan_struktural.'</td>
-                        <td><b>Jabatan Fungsional</b></td><td>'.$item->jabatan_fungsional.'</td>
+                        <td class="border px-3 py-1 font-semibold">NIP</td><td class="border px-3 py-1">'.$item->nip.'</td>
+                        <td class="border px-3 py-1 font-semibold">Nama</td><td class="border px-3 py-1">'.$item->nama.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td><b>Unit Kerja</b></td><td>'.$item->unit_kerja.'</td>
-                        <td><b>Homebase</b></td><td>'.$item->homebase.'</td>
+                        <td class="border px-3 py-1 font-semibold">Jabatan Struktural</td><td class="border px-3 py-1">'.$item->jabatan_struktural.'</td>
+                        <td class="border px-3 py-1 font-semibold">Jabatan Fungsional</td><td class="border px-3 py-1">'.$item->jabatan_fungsional.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td><b>Pangkat</b></td><td>'.$item->pangkat.'</td>
-                        <td><b>Status Kerja</b></td><td>'.$item->status_kerja.'</td>
+                        <td class="border px-3 py-1 font-semibold">Unit Kerja</td><td class="border px-3 py-1">'.$item->unit_kerja.'</td>
+                        <td class="border px-3 py-1 font-semibold">Homebase</td><td class="border px-3 py-1">'.$item->homebase.'</td>
                       </tr>';
             $html .= '<tr>
-                        <td><b>Level Pegawai</b></td><td colspan="3">'.$item->level_pegawai.'</td>
+                        <td class="border px-3 py-1 font-semibold">Pangkat</td><td class="border px-3 py-1">'.$item->pangkat.'</td>
+                        <td class="border px-3 py-1 font-semibold">Status Kerja</td><td class="border px-3 py-1">'.$item->status_kerja.'</td>
+                      </tr>';
+            $html .= '<tr>
+                        <td class="border px-3 py-1 font-semibold">Level Pegawai</td><td class="border px-3 py-1" colspan="3">'.$item->level_pegawai.'</td>
                       </tr>';
             $html .= '</table>';
 
@@ -1244,14 +1240,17 @@ class AglobalController extends Controller
 
             if (count($detail_rubrik_kinerja) > 0) {
                 foreach ($detail_rubrik_kinerja as $rubrik) {
-                    $html .= '<table class="poki-table sub-table">';
-                    $html .= '<tr class="rubrik-title"><th colspan="5">Rubrik Kinerja: '.$rubrik->rubrik_kinerja.' <span style="font-weight:normal;font-size:12px;">('.$rubrik->kategori.')</span></th></tr>';
-                    $html .= '<tr>
-                        <th width="40">No</th>
-                        <th>Kegiatan</th>
-                        <th>Ukuran Keberhasilan</th>
-                        <th>Realisasi</th>
-                        <th>Aspek</th>
+                    $html .= '<div class="overflow-x-auto mb-4">';
+                    $html .= '<table class="min-w-full border border-gray-300 bg-white shadow-sm rounded-lg table-sm text-sm">';
+                    $html .= '<tr class="bg-gray-100 font-bold text-sm">
+                        <th colspan="5" class="px-3 py-2 text-left">Rubrik Kinerja: '.$rubrik->rubrik_kinerja.' <span class="font-normal text-xs text-gray-500">('.$rubrik->kategori.')</span></th>
+                    </tr>';
+                    $html .= '<tr class="bg-gray-50 text-sm">
+                        <th class="border px-2 py-1 w-10">No</th>
+                        <th class="border px-2 py-1">Kegiatan</th>
+                        <th class="border px-2 py-1">Ukuran Keberhasilan</th>
+                        <th class="border px-2 py-1">Realisasi</th>
+                        <th class="border px-2 py-1">Aspek</th>
                     </tr>';
 
                     $detail_kegiatan = DB::table('rencana_hasil_kerja_item')
@@ -1268,30 +1267,34 @@ class AglobalController extends Controller
                         ->get();
 
                     if (count($detail_kegiatan) == 0) {
-                        $html .= '<tr><td colspan="5" style="text-align:center;color:#888;">Tidak ada kegiatan</td></tr>';
+                        $html .= '<tr><td colspan="5" class="text-center text-gray-400 py-2">Tidak ada kegiatan</td></tr>';
                     } else {
                         $no = 1;
                         foreach ($detail_kegiatan as $keg) {
-                            $html .= '<tr class="kegiatan-title">';
-                            $html .= '<td style="text-align:center;">'.$no.'</td>';
-                            $html .= '<td>'.$keg->kegiatan.'</td>';
-                            $html .= '<td>'.$keg->ukuran_keberhasilan.'</td>';
-                            $html .= '<td>'.$keg->realisasi.'</td>';
-                            $html .= '<td>
-                                <b>Kuantitas:</b> '.($keg->aspek_kuantitas ?? '-').'<br>
-                                <b>Kualitas:</b> '.($keg->aspek_kualitas ?? '-').'<br>
-                                <b>Waktu:</b> '.($keg->aspek_waktu ?? '-').'
+                            $html .= '<tr class="bg-blue-50">';
+                            $html .= '<td class="border px-2 py-1 text-center">'.$no.'</td>';
+                            $html .= '<td class="border px-2 py-1">'.$keg->kegiatan.'</td>';
+                            $html .= '<td class="border px-2 py-1">'.$keg->ukuran_keberhasilan.'</td>';
+                            $html .= '<td class="border px-2 py-1">'.$keg->realisasi.'</td>';
+                            $html .= '<td class="border px-2 py-1">
+                                <span class="block"><span class="font-semibold">Kuantitas:</span> '.($keg->aspek_kuantitas ?? '-').'</span>
+                                <span class="block"><span class="font-semibold">Kualitas:</span> '.($keg->aspek_kualitas ?? '-').'</span>
+                                <span class="block"><span class="font-semibold">Waktu:</span> '.($keg->aspek_waktu ?? '-').'</span>
                             </td>';
                             $html .= '</tr>';
                             $no++;
                         }
                     }
                     $html .= '</table>';
+                    $html .= '</div>';
                 }
             } else {
-                $html .= '<div style="margin-bottom:20px;">Tidak ada rubrik kinerja untuk portofolio ini.</div>';
+                $html .= '<div class="mb-5 text-gray-500 text-sm">Tidak ada rubrik kinerja untuk portofolio ini.</div>';
             }
+            $html .= '</div>';
         }
+
+        $html .= '</body></html>';
 
         return response($html, 200)->header('Content-Type', 'text/html');
     }
@@ -1430,119 +1433,127 @@ class AglobalController extends Controller
             $total_bobot_poin = 0;
         }
 
-        // Buat HTML tabel sesuai gambar
-        $html = '<style>
-            table.lap-aktifitas { border-collapse:collapse; width:100%; font-size:14px; }
-            table.lap-aktifitas th, table.lap-aktifitas td { border:1px solid #222; padding:4px 8px; text-align:center; }
-            table.lap-aktifitas th { background:#f5f5f5; }
-            table.lap-aktifitas td.kolom-komponen { text-align:left; }
-            .row-header { background:#f5f5f5; font-weight:bold; }
-        </style>';
+        // Buat HTML tabel dengan Tailwind CSS
+        $html = '
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        <style>
+            .row-header { background-color: #f3f4f6; font-weight: bold; }
+            .kolom-komponen { text-align: left !important; }
+        </style>
+        ';
+        $html .= '<div class="p-3">';
 
-        $html .= '<table class="lap-aktifitas">';
-        $html .= '<tr>
-            <th rowspan="2" width="30">No</th>
-            <th rowspan="2" width="260">KOMPONEN AKTIFITAS</th>
-            <th colspan="12">BULAN</th>
-            <th rowspan="2" width="60">TOTAL</th>
-        </tr>';
-        $html .= '<tr>';
+        $html .= '<div class="overflow-x-auto">';
+        $html .= '<table class="min-w-full text-xs md:text-sm border border-gray-300 rounded-lg">';
+        $html .= '<thead>
+        <tr>
+            <th rowspan="2" class="border border-gray-300 px-2 py-2 bg-gray-100 text-center align-middle" style="width:30px;">No</th>
+            <th rowspan="2" class="border border-gray-300 px-2 py-2 bg-gray-100 text-center align-middle" style="width:260px;">KOMPONEN AKTIFITAS</th>
+            <th colspan="12" class="border border-gray-300 px-2 py-2 bg-gray-100 text-center">BULAN</th>
+            <th rowspan="2" class="border border-gray-300 px-2 py-2 bg-gray-100 text-center align-middle" style="width:60px;">TOTAL</th>
+        </tr>
+        <tr>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<th width="32">'.$bulan.'</th>';
+            $html .= '<th class="border border-gray-300 px-2 py-1 bg-gray-50 text-center" style="width:32px;">'.$bulan.'</th>';
         }
-        $html .= '</tr>';
+        $html .= '</tr>
+        </thead>
+        <tbody>';
 
         // --- JUMLAH DAN POIN AKTIVITAS (Header)
-        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">JUMLAH DAN POIN AKTIFITAS</td></tr>';
+        $html .= '<tr class="row-header"><td colspan="15" class="text-left px-2 py-2 border border-gray-300 bg-gray-50">JUMLAH DAN POIN AKTIFITAS</td></tr>';
 
         // 1. Jumlah Aktifitas
         $html .= '<tr>
-            <td>1</td>
-            <td class="kolom-komponen">Jumlah Aktifitas</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">1</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Jumlah Aktifitas</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_perbulan[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_perbulan[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_aktifitas.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_aktifitas.'</td></tr>';
 
         // 2. Poin Aktifitas
         $html .= '<tr>
-            <td>2</td>
-            <td class="kolom-komponen">Poin Aktifitas</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">2</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Poin Aktifitas</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.(is_float($rekap_poin_perbulan[$bulan]) ? number_format($rekap_poin_perbulan[$bulan],2,'.','') : $rekap_poin_perbulan[$bulan]).'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.(is_float($rekap_poin_perbulan[$bulan]) ? number_format($rekap_poin_perbulan[$bulan],2,'.','') : $rekap_poin_perbulan[$bulan]).'</td>';
         }
-        $html .= '<td>'.(is_float($total_poin) ? number_format($total_poin,2,'.','') : $total_poin).'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.(is_float($total_poin) ? number_format($total_poin,2,'.','') : $total_poin).'</td></tr>';
 
         // 3. Bobot Poin Aktifitas
         $html .= '<tr>
-            <td>3</td>
-            <td class="kolom-komponen">Bobot Poin Aktifitas (%)</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">3</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Bobot Poin Aktifitas (%)</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td><small>'.number_format($rekap_bobot_poin[$bulan],0,'.','').'</small></td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center"><span class="text-xs">'.number_format($rekap_bobot_poin[$bulan],0,'.','').'</span></td>';
         }
-        $html .= '<td>'.number_format($total_bobot_poin,0,'.','').'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.number_format($total_bobot_poin,0,'.','').'</td></tr>';
 
         // --- RATING HASIL KERJA (Header)
-        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">RATING HASIL KERJA</td></tr>';
+        $html .= '<tr class="row-header"><td colspan="15" class="text-left px-2 py-2 border border-gray-300 bg-gray-50">RATING HASIL KERJA</td></tr>';
 
         // 4. Diatas Ekspektasi (AE)
         $html .= '<tr>
-            <td>1</td>
-            <td class="kolom-komponen">Diatas Ekspektasi (AE)</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">1</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Diatas Ekspektasi (AE)</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_rating_ae[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_rating_ae[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_ae.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_ae.'</td></tr>';
 
         // 5. Sesuai Ekspektasi (SE)
         $html .= '<tr>
-            <td>2</td>
-            <td class="kolom-komponen">Sesuai Ekspektasi (SE)</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">2</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Sesuai Ekspektasi (SE)</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_rating_se[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_rating_se[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_se.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_se.'</td></tr>';
 
         // 6. Dibawah Ekspektasi (BE)
         $html .= '<tr>
-            <td>3</td>
-            <td class="kolom-komponen">Dibawah Ekspektasi (BE)</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">3</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Dibawah Ekspektasi (BE)</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_rating_be[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_rating_be[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_be.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_be.'</td></tr>';
 
         // --- BUKTI AKTIVITAS (Header)
-        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">BUKTI AKTIFITAS</td></tr>';
+        $html .= '<tr class="row-header"><td colspan="15" class="text-left px-2 py-2 border border-gray-300 bg-gray-50">BUKTI AKTIFITAS</td></tr>';
 
         // 7. Bukti Aktifitas: Photo / Gambar
         $html .= '<tr>
-            <td>1</td>
-            <td class="kolom-komponen">Photo / Gambar / Screenshoot</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">1</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Photo / Gambar / Screenshoot</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_bukti_gambar[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_bukti_gambar[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_gambar.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_gambar.'</td></tr>';
 
         // 8. Bukti Aktifitas: Dokumen
         $html .= '<tr>
-            <td>2</td>
-            <td class="kolom-komponen">Dokumen (Pdf)</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">2</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Dokumen (Pdf)</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_bukti_dokumen[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_bukti_dokumen[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_dokumen.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_dokumen.'</td></tr>';
 
         // 9. Bukti Aktifitas: Tautan / Link
         $html .= '<tr>
-            <td>3</td>
-            <td class="kolom-komponen">Tautan / External Link</td>';
+            <td class="border border-gray-300 px-2 py-1 text-center">3</td>
+            <td class="border border-gray-300 px-2 py-1 kolom-komponen">Tautan / External Link</td>';
         for ($bulan = 1; $bulan <= 12; $bulan++) {
-            $html .= '<td>'.$rekap_bukti_tautan[$bulan].'</td>';
+            $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$rekap_bukti_tautan[$bulan].'</td>';
         }
-        $html .= '<td>'.$total_tautan.'</td></tr>';
+        $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_tautan.'</td></tr>';
 
-        $html .= '</table>';
+        $html .= '</tbody></table>';
+        $html .= '</div>'; // overflow-x-auto
+
+        $html .= '</div>';
 
         return response($html, 200)->header('Content-Type', 'text/html');
     }
