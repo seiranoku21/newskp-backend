@@ -280,5 +280,9 @@ Route::get('ref_status', 'AglobalController@ref_status');
 Route::get('ref_status_vrf', 'AglobalController@ref_status_vrf');
 Route::get('ref_tipe_skp', 'AglobalController@ref_tipe_skp');
 
+// ---LAPORAN ---DATA REPORT
+Route::get('lap_aktifitas', 'AglobalController@laporan_aktifitas');
+
 // ---HTML OUTPUT
 Route::get('portofolio_html', 'AglobalController@get_portofolio_html');
+Route::get('lap_aktifitas_html', 'AglobalController@laporan_aktifitas_html');

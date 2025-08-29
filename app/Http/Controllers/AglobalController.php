@@ -345,6 +345,179 @@ class AglobalController extends Controller
         ]);
     }
 
+    public function laporan_aktifitas(Request $request){
+        $nip = $request->input('nip');
+        $tahun = $request->input('tahun');
+
+        $query = DB::table('aktifitas_kinerja');
+
+        if (!empty($nip)) {
+            $query->where('nip', $nip);
+        }
+
+        if (!empty($tahun)) {
+            $query->whereYear('tanggal_mulai', $tahun);
+        }
+
+        $data = $query->get();
+
+        // Buat rekap jumlah aktifitas per bulan (1-12)
+        $rekap_perbulan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_perbulan[$bulan] = 0;
+        }
+        foreach ($data as $item) {
+            // Ambil bulan dari tanggal_mulai
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            if (isset($rekap_perbulan[$bulan])) {
+                $rekap_perbulan[$bulan]++;
+            }
+        }
+
+        // Buat rekap jumlah poin per bulan (1-12)
+        $rekap_poin_perbulan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_poin_perbulan[$bulan] = 0;
+        }
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            if (isset($rekap_poin_perbulan[$bulan])) {
+                // Jika ada field 'poin', gunakan, jika tidak, asumsikan 1
+                $poin = isset($item->poin) ? floatval($item->poin) : 1;
+                $rekap_poin_perbulan[$bulan] += $poin;
+            }
+        }
+
+        $rekap_bobot_poin_perbulan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            if ($rekap_perbulan[$bulan] > 0) {
+                $rekap_bobot_poin_perbulan[$bulan] = (($rekap_poin_perbulan[$bulan]) / ($rekap_perbulan[$bulan] * 2)) * 100;
+            } else {
+                $rekap_bobot_poin_perbulan[$bulan] = 0;
+            }
+        }
+
+        // Buat rekap jumlah rating_hasil_kerja (AE, SE, BE) per bulan (1-12)
+        $rekap_rating_hasil_kerja = [];
+        $rating_types = ['AE', 'SE', 'BE'];
+        // Inisialisasi array 12 bulan untuk setiap rating
+        foreach ($rating_types as $rating) {
+            for ($bulan = 1; $bulan <= 12; $bulan++) {
+                $rekap_rating_hasil_kerja[$rating][$bulan] = 0;
+            }
+        }
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            $rating = isset($item->rating_hasil_kerja) ? $item->rating_hasil_kerja : null;
+            if (in_array($rating, $rating_types) && isset($rekap_rating_hasil_kerja[$rating][$bulan])) {
+                $rekap_rating_hasil_kerja[$rating][$bulan]++;
+            }
+        }
+
+        // Rekap jumlah gambar yang diupload per bulan (1-12)
+        $rekap_bukti_gambar = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_bukti_gambar[$bulan] = 0;
+        }
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            // Asumsi field 'bukti_gambar' adalah array atau string json/array gambar
+            if (isset($item->gambar)) {
+                $gambar = $item->gambar;
+                // Jika string json, decode dulu
+                if (is_string($gambar)) {
+                    $decoded = json_decode($gambar, true);
+                    if (is_array($decoded)) {
+                        $jumlah_gambar = count($decoded);
+                    } else {
+                        // Jika bukan array, asumsikan 1 gambar jika tidak kosong
+                        $jumlah_gambar = !empty($gambar) ? 1 : 0;
+                    }
+                } elseif (is_array($gambar)) {
+                    $jumlah_gambar = count($gambar);
+                } else {
+                    $jumlah_gambar = 0;
+                }
+                if (isset($rekap_bukti_gambar[$bulan])) {
+                    $rekap_bukti_gambar[$bulan] += $jumlah_gambar;
+                }
+            }
+        }
+
+        // Rekap jumlah bukti dokumen (field: 'dokumen') per bulan (1-12)
+        $rekap_bukti_dokumen = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_bukti_dokumen[$bulan] = 0;
+        }
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            // Asumsi field 'dokumen' adalah array atau string json/array dokumen
+            if (isset($item->dokumen)) {
+                $dokumen = $item->dokumen;
+                // Jika string json, decode dulu
+                if (is_string($dokumen)) {
+                    $decoded = json_decode($dokumen, true);
+                    if (is_array($decoded)) {
+                        $jumlah_dokumen = count($decoded);
+                    } else {
+                        // Jika bukan array, asumsikan 1 dokumen jika tidak kosong
+                        $jumlah_dokumen = !empty($dokumen) ? 1 : 0;
+                    }
+                } elseif (is_array($dokumen)) {
+                    $jumlah_dokumen = count($dokumen);
+                } else {
+                    $jumlah_dokumen = 0;
+                }
+                if (isset($rekap_bukti_dokumen[$bulan])) {
+                    $rekap_bukti_dokumen[$bulan] += $jumlah_dokumen;
+                }
+            }
+        }
+
+        // Rekap jumlah bukti tautan (field: 'tautan') per bulan (1-12)
+        $rekap_bukti_tautan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_bukti_tautan[$bulan] = 0;
+        }
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            // Asumsi field 'tautan' adalah array atau string json/array tautan
+            if (isset($item->tautan)) {
+                $tautan = $item->tautan;
+                // Jika string json, decode dulu
+                if (is_string($tautan)) {
+                    $decoded = json_decode($tautan, true);
+                    if (is_array($decoded)) {
+                        $jumlah_tautan = count($decoded);
+                    } else {
+                        // Jika bukan array, asumsikan 1 tautan jika tidak kosong
+                        $jumlah_tautan = !empty($tautan) ? 1 : 0;
+                    }
+                } elseif (is_array($tautan)) {
+                    $jumlah_tautan = count($tautan);
+                } else {
+                    $jumlah_tautan = 0;
+                }
+                if (isset($rekap_bukti_tautan[$bulan])) {
+                    $rekap_bukti_tautan[$bulan] += $jumlah_tautan;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data aktifitas kinerja berhasil diambil.',
+            'data' => $data,
+            'rekap_perbulan' => $rekap_perbulan,
+            'rekap_poin_perbulan' => $rekap_poin_perbulan,
+            'rekap_rating_hasil_kerja' => $rekap_rating_hasil_kerja,
+            'rekap_bukti_gambar' => $rekap_bukti_gambar,
+            'rekap_bukti_dokumen' =>  $rekap_bukti_dokumen,
+            'rekap_bukti_tautan' => $rekap_bukti_tautan,
+            'rekap_bobot_poin_perbulan' => $rekap_bobot_poin_perbulan
+        ]);
+    } 
+
     // ---AKTIFITAS KINERJA END---  
 
 
@@ -957,7 +1130,7 @@ class AglobalController extends Controller
 
     // ---REFERENSI END--
 
-    // ---HTML OOUTPUT
+    // ---HTML OOUTPUT START
 
     // ---Portofolio
     public function get_portofolio_html(Request $request){
@@ -1122,5 +1295,260 @@ class AglobalController extends Controller
 
         return response($html, 200)->header('Content-Type', 'text/html');
     }
+
+    // ---Laporan Aktifitas
+    public function laporan_aktifitas_html(Request $request){
+        $nip = $request->input('nip');
+        $tahun = $request->input('tahun');
+
+        $query = DB::table('aktifitas_kinerja');
+
+        if (!empty($nip)) {
+            $query->where('nip', $nip);
+        }
+
+        if (!empty($tahun)) {
+            $query->whereYear('tanggal_mulai', $tahun);
+        }
+
+        $data = $query->get();
+
+        // Rekap per bulan
+        $rekap_perbulan = [];
+        $rekap_poin_perbulan = [];
+        $rekap_bobot_poin = [];
+        $rekap_rating_ae = [];
+        $rekap_rating_se = [];
+        $rekap_rating_be = [];
+        $rekap_bukti_gambar = [];
+        $rekap_bukti_dokumen = [];
+        $rekap_bukti_tautan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $rekap_perbulan[$bulan] = 0;
+            $rekap_poin_perbulan[$bulan] = 0;
+            $rekap_bobot_poin[$bulan] = 0;
+            $rekap_rating_ae[$bulan] = 0;
+            $rekap_rating_se[$bulan] = 0;
+            $rekap_rating_be[$bulan] = 0;
+            $rekap_bukti_gambar[$bulan] = 0;
+            $rekap_bukti_dokumen[$bulan] = 0;
+            $rekap_bukti_tautan[$bulan] = 0;
+        }
+
+        foreach ($data as $item) {
+            $bulan = date('n', strtotime($item->tanggal_mulai));
+            // 1. Jumlah Aktifitas
+            if (isset($rekap_perbulan[$bulan])) {
+                $rekap_perbulan[$bulan]++;
+            }
+            // 2. Poin Aktifitas
+            if (isset($rekap_poin_perbulan[$bulan])) {
+                $poin = isset($item->poin) ? floatval($item->poin) : 1;
+                $rekap_poin_perbulan[$bulan] += $poin;
+            }
+            // 3-5. Rating AE, SE, BE
+            $rating = isset($item->rating_hasil_kerja) ? $item->rating_hasil_kerja : null;
+            if ($rating == 'AE') $rekap_rating_ae[$bulan]++;
+            if ($rating == 'SE') $rekap_rating_se[$bulan]++;
+            if ($rating == 'BE') $rekap_rating_be[$bulan]++;
+            // 6. Bukti Gambar
+            if (isset($item->gambar)) {
+                $gambar = $item->gambar;
+                if (is_string($gambar)) {
+                    $decoded = json_decode($gambar, true);
+                    if (is_array($decoded)) {
+                        $jumlah_gambar = count($decoded);
+                    } else {
+                        $jumlah_gambar = !empty($gambar) ? 1 : 0;
+                    }
+                } elseif (is_array($gambar)) {
+                    $jumlah_gambar = count($gambar);
+                } else {
+                    $jumlah_gambar = 0;
+                }
+                $rekap_bukti_gambar[$bulan] += $jumlah_gambar;
+            }
+            // 7. Bukti Dokumen
+            if (isset($item->dokumen)) {
+                $dokumen = $item->dokumen;
+                if (is_string($dokumen)) {
+                    $decoded = json_decode($dokumen, true);
+                    if (is_array($decoded)) {
+                        $jumlah_dokumen = count($decoded);
+                    } else {
+                        $jumlah_dokumen = !empty($dokumen) ? 1 : 0;
+                    }
+                } elseif (is_array($dokumen)) {
+                    $jumlah_dokumen = count($dokumen);
+                } else {
+                    $jumlah_dokumen = 0;
+                }
+                $rekap_bukti_dokumen[$bulan] += $jumlah_dokumen;
+            }
+            // 8. Bukti Tautan
+            if (isset($item->tautan)) {
+                $tautan = $item->tautan;
+                if (is_string($tautan)) {
+                    $decoded = json_decode($tautan, true);
+                    if (is_array($decoded)) {
+                        $jumlah_tautan = count($decoded);
+                    } else {
+                        $jumlah_tautan = !empty($tautan) ? 1 : 0;
+                    }
+                } elseif (is_array($tautan)) {
+                    $jumlah_tautan = count($tautan);
+                } else {
+                    $jumlah_tautan = 0;
+                }
+                $rekap_bukti_tautan[$bulan] += $jumlah_tautan;
+            }
+        }
+
+        // Hitung bobot poin per bulan
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            if ($rekap_perbulan[$bulan] > 0) {
+                $rekap_bobot_poin[$bulan] = ($rekap_poin_perbulan[$bulan] / ($rekap_perbulan[$bulan] * 2)) * 100;
+            } else {
+                $rekap_bobot_poin[$bulan] = 0;
+            }
+        }
+
+        // Hitung total per baris
+        $total_aktifitas = array_sum($rekap_perbulan);
+        $total_poin = array_sum($rekap_poin_perbulan);
+        $total_ae = array_sum($rekap_rating_ae);
+        $total_se = array_sum($rekap_rating_se);
+        $total_be = array_sum($rekap_rating_be);
+        $total_gambar = array_sum($rekap_bukti_gambar);
+        $total_dokumen = array_sum($rekap_bukti_dokumen);
+        $total_tautan = array_sum($rekap_bukti_tautan);
+
+        // Hitung total bobot poin
+        if ($total_aktifitas > 0) {
+            $total_bobot_poin = ($total_poin / ($total_aktifitas * 2)) * 100;
+        } else {
+            $total_bobot_poin = 0;
+        }
+
+        // Buat HTML tabel sesuai gambar
+        $html = '<style>
+            table.lap-aktifitas { border-collapse:collapse; width:100%; font-size:14px; }
+            table.lap-aktifitas th, table.lap-aktifitas td { border:1px solid #222; padding:4px 8px; text-align:center; }
+            table.lap-aktifitas th { background:#f5f5f5; }
+            table.lap-aktifitas td.kolom-komponen { text-align:left; }
+            .row-header { background:#f5f5f5; font-weight:bold; }
+        </style>';
+
+        $html .= '<table class="lap-aktifitas">';
+        $html .= '<tr>
+            <th rowspan="2" width="30">No</th>
+            <th rowspan="2" width="260">KOMPONEN AKTIFITAS</th>
+            <th colspan="12">BULAN</th>
+            <th rowspan="2" width="60">TOTAL</th>
+        </tr>';
+        $html .= '<tr>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<th width="32">'.$bulan.'</th>';
+        }
+        $html .= '</tr>';
+
+        // --- JUMLAH DAN POIN AKTIVITAS (Header)
+        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">JUMLAH DAN POIN AKTIFITAS</td></tr>';
+
+        // 1. Jumlah Aktifitas
+        $html .= '<tr>
+            <td>1</td>
+            <td class="kolom-komponen">Jumlah Aktifitas</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_perbulan[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_aktifitas.'</td></tr>';
+
+        // 2. Poin Aktifitas
+        $html .= '<tr>
+            <td>2</td>
+            <td class="kolom-komponen">Poin Aktifitas</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.(is_float($rekap_poin_perbulan[$bulan]) ? number_format($rekap_poin_perbulan[$bulan],2,'.','') : $rekap_poin_perbulan[$bulan]).'</td>';
+        }
+        $html .= '<td>'.(is_float($total_poin) ? number_format($total_poin,2,'.','') : $total_poin).'</td></tr>';
+
+        // 3. Bobot Poin Aktifitas
+        $html .= '<tr>
+            <td>3</td>
+            <td class="kolom-komponen">Bobot Poin Aktifitas (%)</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td><small>'.number_format($rekap_bobot_poin[$bulan],0,'.','').'</small></td>';
+        }
+        $html .= '<td>'.number_format($total_bobot_poin,0,'.','').'</td></tr>';
+
+        // --- RATING HASIL KERJA (Header)
+        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">RATING HASIL KERJA</td></tr>';
+
+        // 4. Diatas Ekspektasi (AE)
+        $html .= '<tr>
+            <td>1</td>
+            <td class="kolom-komponen">Diatas Ekspektasi (AE)</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_rating_ae[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_ae.'</td></tr>';
+
+        // 5. Sesuai Ekspektasi (SE)
+        $html .= '<tr>
+            <td>2</td>
+            <td class="kolom-komponen">Sesuai Ekspektasi (SE)</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_rating_se[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_se.'</td></tr>';
+
+        // 6. Dibawah Ekspektasi (BE)
+        $html .= '<tr>
+            <td>3</td>
+            <td class="kolom-komponen">Dibawah Ekspektasi (BE)</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_rating_be[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_be.'</td></tr>';
+
+        // --- BUKTI AKTIVITAS (Header)
+        $html .= '<tr class="row-header"><td colspan="15" style="text-align:left;">BUKTI AKTIFITAS</td></tr>';
+
+        // 7. Bukti Aktifitas: Photo / Gambar
+        $html .= '<tr>
+            <td>1</td>
+            <td class="kolom-komponen">Photo / Gambar / Screenshoot</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_bukti_gambar[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_gambar.'</td></tr>';
+
+        // 8. Bukti Aktifitas: Dokumen
+        $html .= '<tr>
+            <td>2</td>
+            <td class="kolom-komponen">Dokumen (Pdf)</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_bukti_dokumen[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_dokumen.'</td></tr>';
+
+        // 9. Bukti Aktifitas: Tautan / Link
+        $html .= '<tr>
+            <td>3</td>
+            <td class="kolom-komponen">Tautan / External Link</td>';
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $html .= '<td>'.$rekap_bukti_tautan[$bulan].'</td>';
+        }
+        $html .= '<td>'.$total_tautan.'</td></tr>';
+
+        $html .= '</table>';
+
+        return response($html, 200)->header('Content-Type', 'text/html');
+    }
+
+    
+
+    // --HTML OUTPUT END
 
 }
