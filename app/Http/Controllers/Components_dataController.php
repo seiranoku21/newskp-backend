@@ -97,8 +97,13 @@ class Components_dataController extends Controller{
 	}
 
 	function portofolio_kinerja_uid_option_list(Request $request){
-		$sqltext = "SELECT uid as value, uid as label FROM portofolio_kinerja";
-		$query_params = [];
+		if ($request->has('nip')) {
+			$sqltext = "SELECT uid as value, jabatan as label FROM portofolio_kinerja WHERE nip = ?";
+			$query_params = [$request->nip];
+		} else {
+			$sqltext = "SELECT uid as value, jabatan as label FROM portofolio_kinerja";
+			$query_params = [];
+		}
 		$arr = DB::select($sqltext, $query_params);
 		return $arr;
 	}
