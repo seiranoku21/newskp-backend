@@ -19,7 +19,7 @@ class PortofolioKinerjaController extends Controller
      */
 	function index(Request $request, $fieldname = null , $fieldvalue = null){
 		$query = PortofolioKinerja::query();
-		$query->where("portofolio_kinerja.nip", "=", $request->user_nip);
+		$query->where("portofolio_kinerja.nip", "=", $request->nip);
 		if($request->search){
 			$search = trim($request->search);
 			PortofolioKinerja::search($query, $search);
