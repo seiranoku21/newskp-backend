@@ -189,6 +189,44 @@ class AglobalController extends Controller
                 ->first();
         return $data;
     }   
+
+    public function cek_portofolio(Request $request){
+        $nip = $request->nip;
+        $tahun = $request->tahun;
+        $unit_kerja_id = $request->unit_kerja_id;
+        $jabatan_struktural_id = $request->jabatan_struktural_id;
+        $jabatan_fungsional_id = $request->jabatan_fungsional_id;
+        $homebase_id = $request->homebase_id;
+
+        $exists = DB::table('portofolio_kinerja')
+            ->where('nip', $nip)
+            ->where('tahun', $tahun)
+            ->where('unit_kerja_id', $unit_kerja_id)
+            ->where('jabatan_struktural_id', $jabatan_struktural_id)
+            ->where('jabatan_fungsional_id', $jabatan_fungsional_id)
+            ->where('homebase_id', $homebase_id)
+            ->whereNotNull('nip')
+            ->whereNotNull('tahun')
+            ->whereNotNull('unit_kerja_id')
+            ->whereNotNull('jabatan_struktural_id')
+            ->whereNotNull('jabatan_fungsional_id')
+            ->whereNotNull('homebase_id')
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Portofolio sudah dibuat sebelumnya dengan Unit Kerja / Homebase dan Jabatan yang sama. Untuk membuat Portofolio baru, pastikan sudah ada perubahan data baik Unit Kerja / Homebase maupun jabatan yang baru. Hubungi Kepegawaian untuk perubahan data pegawai yang baru.',
+                'status_cek' => 'Y'
+            ], 200);
+        } else {
+            return response()->json([
+                'success' => true,
+                'message' => 'Portofolio belum ada, silakan lanjutkan pembuatan.',
+                'status_cek' => 'N'
+            ], 200);
+        }
+    }
     // ---PORTFOLIO KINERJA END---
 
     // ---RUBRIK KEGIATAN START

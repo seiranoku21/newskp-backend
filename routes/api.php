@@ -156,6 +156,10 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::any('porto_kinerja/edit/{rec_id}', 'PortofolioKinerjaController@edit');	
     Route::any('porto_kinerja/delete/{rec_id}', 'PortofolioKinerjaController@delete');
 
+    Route::get('porto_kinerja_cek', 'AglobalController@cek_portofolio');
+
+
+
     // ---Rencana Hasil Kerja Atasan---
     Route::get('rhka/', 'RencanaHasilKerjaAtasanController@index');
     Route::get('rhka/index', 'RencanaHasilKerjaAtasanController@index');
