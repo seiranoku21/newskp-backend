@@ -244,6 +244,9 @@ Route::post('auth/sso_refresh_token', 'AuthController@sso_refresh_token');
 Route::post('auth/sso_userinfo', 'AuthController@sso_userinfo');
 Route::get('login', 'AuthController@login')->name('login');
 
+// ---Setting
+Route::get('setting','AglobalController@setting');
+
  // ---Shared
  Route::get('components_data/user_role_id_option_list/{arg1?}', 'Components_dataController@user_role_id_option_list');	
  Route::get('components_data/skp_tipe_id_option_list/{arg1?}', 'Components_dataController@skp_tipe_id_option_list');	

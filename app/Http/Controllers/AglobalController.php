@@ -10,6 +10,45 @@ use DB;
 
 class AglobalController extends Controller
 {   
+    // ---SETTING
+
+    public function setting(Request $request){
+        // Ambil data setting
+        $data = \DB::table('setting')->first();
+
+        if ($data) {
+            // Ambil data periode aktif dari ref_periode
+            $periode_aktif_tendik = null;
+            if (isset($data->periode_aktif_tendik_id)) {
+                $periode_aktif_tendik = \DB::table('ref_periode')
+                    ->where('id', $data->periode_aktif_tendik_id)
+                    ->first();
+            }
+
+            $periode_aktif_dosen = null;
+            if (isset($data->periode_aktif_dosen_id)) {
+                $periode_aktif_dosen = \DB::table('ref_periode')
+                    ->where('id', $data->periode_aktif_dosen_id)
+                    ->first();
+            }
+
+            // Gabungkan data setting dan periode aktif (jika ada)
+            $result = [
+                "success" => true,
+                "data" => $data,
+                "periode_aktif_tendik" => $periode_aktif_tendik,
+                "periode_aktif_dosen" => $periode_aktif_dosen
+            ];
+
+            return response()->json($result);
+        } else {
+            return response()->json([
+                "success" => false,
+                "message" => "Data not found"
+            ], 404);
+        }
+    }
+
     // ---PEGAWAI START---
     public function get_pegawai_by_nip(Request $request){
         $nip = $request->nip;
