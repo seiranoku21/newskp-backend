@@ -661,7 +661,8 @@ class AglobalController extends Controller
                          'a.rating_perilaku_kerja as rating_perilaku_kerja',
                          'a.predikat_kinerja as predikat_kinerja',
                          'a.poin as poin',
-                         'a.bobot_persen as bobot_persen'
+                         'a.bobot_persen as bobot_persen',
+                         'a.penilai_nama as penilai_nama'
                          )
                 ->where('a.penilai_nip', $nip_penilai)
                 ->where('a.tahun', $tahun)
