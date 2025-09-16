@@ -274,6 +274,8 @@ class SimpegController extends Controller
     function spg_pegawai(Request $request){
         $nip = $request->nip;
         $curl = curl_init();
+        $id_sts = "d390b650-bf5e-454b-846f-efb3510f89a6"; // Aktif
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://simpeg.untirta.ac.id/berbagidata/all-pegawai2?nip='.$nip,
             CURLOPT_RETURNTRANSFER => true,
@@ -305,7 +307,7 @@ class SimpegController extends Controller
                     $data = [$decodedResponse->data];
                 }
                 // Only return selected columns
-                $data = array_map(function($item) {
+                $data = array_map(function($item) use ($id_sts) {
                     $gelarDepan = isset($item->gelarDepan) && $item->gelarDepan ? trim($item->gelarDepan) : '';
                     $nama = isset($item->namaPegawai) ? trim($item->namaPegawai) : '';
                     $gelarBelakang = isset($item->gelarBelakang) && $item->gelarBelakang ? trim($item->gelarBelakang) : '';
@@ -348,7 +350,7 @@ class SimpegController extends Controller
                         'id_kat_pegawai'            => null,
                         'nm_kat_pegawai'            => $item->kategoriPegawai ?? null,
                         'email'                     => $item->emailPegawai ?? null,
-                        'id_sts_pegawai'            => null,
+                        'id_sts_pegawai'            => $id_sts,
                         'nm_sts_pegawai'            => $item->statusPegawai ?? null,
                         'created_at'                => now(),
                         'updated_at'                => now(),
