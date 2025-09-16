@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'rbac'])->group(function () {
 
-    // ---INTEGRASI
+    // ---INTEGRASI START
 
     Route::get('portofolio', 'AglobalController@get_portofolio');
     Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
@@ -41,6 +41,9 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::post('kinerja_rhki/add', 'RencanaHasilKerjaItemController@tambah_rhki');	
     Route::any('kinerja_rhki/edit/{rec_id}', 'RencanaHasilKerjaItemController@ubah_rhki');	
     Route::any('kinerja_rhki/delete/{rec_id}', 'RencanaHasilKerjaItemController@delete');	
+
+    // ---SIMPEG
+    Route::get('spg_pegawai', 'SimpegController@spg_pegawai');
 
     
 
