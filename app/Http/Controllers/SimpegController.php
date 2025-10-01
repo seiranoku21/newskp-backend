@@ -313,7 +313,7 @@ class SimpegController extends Controller
                     $gelarBelakang = isset($item->gelarBelakang) && $item->gelarBelakang ? trim($item->gelarBelakang) : '';
                     $nama_gelar = $nama;
                     if ($gelarDepan !== '') {
-                        $nama_gelar = $gelarDepan . ' ' . $nama_gelar;
+                        $nama_gelar = $gelarDepan . '. ' . $nama_gelar;
                     }
                     if ($gelarBelakang !== '') {
                         $nama_gelar = $nama_gelar . ', ' . $gelarBelakang;
@@ -321,7 +321,11 @@ class SimpegController extends Controller
 
                     $jabatanStruktural = isset($item->jabatanStruktural) && $item->jabatanStruktural ? trim($item->jabatanStruktural) : '';
                     $jabatanFungsional = isset($item->jabatanFungsional) && $item->jabatanFungsional ? trim($item->jabatanFungsional) : '';
-                    if ($jabatanStruktural !== '' && $jabatanFungsional !== '') {
+                    
+                    // Modified logic for jabatan_aktif
+                    if ($jabatanStruktural === 'Belum Memiliki Jabatan Struktural') {
+                        $jabatan_aktif = $jabatanFungsional;
+                    } elseif ($jabatanStruktural !== '' && $jabatanFungsional !== '') {
                         $jabatan_aktif = $jabatanStruktural . ' (' . $jabatanFungsional . ')';
                     } elseif ($jabatanStruktural !== '') {
                         $jabatan_aktif = $jabatanStruktural;
@@ -333,6 +337,7 @@ class SimpegController extends Controller
 
                     return [
                         'id_pegawai'                => $item->kdPegawai ?? null,
+                        'id_user'                   => $item->email ?? null,
                         'nama'                      => $item->namaPegawai ?? null,
                         'nip'                       => $item->nip ?? null,
                         'nip_lama'                  => $item->nipLama ?? null,
@@ -349,7 +354,7 @@ class SimpegController extends Controller
                         'nm_unit'                   => $item->namaUnitkerja ?? null,
                         'id_kat_pegawai'            => null,
                         'nm_kat_pegawai'            => $item->kategoriPegawai ?? null,
-                        'email'                     => $item->emailPegawai ?? null,
+                        'email'                     => $item->email ?? null,
                         'id_sts_pegawai'            => $id_sts,
                         'nm_sts_pegawai'            => $item->statusPegawai ?? null,
                         'created_at'                => now(),
