@@ -322,7 +322,7 @@ class SimpegController extends Controller
                     $jabatanStruktural = isset($item->jabatanStruktural) && $item->jabatanStruktural ? trim($item->jabatanStruktural) : '';
                     $jabatanFungsional = isset($item->jabatanFungsional) && $item->jabatanFungsional ? trim($item->jabatanFungsional) : '';
                     
-                    // Modified logic for jabatan_aktif
+                    // Jabatan Aktif
                     if ($jabatanStruktural === 'Belum Memiliki Jabatan Struktural') {
                         $jabatan_aktif = $jabatanFungsional;
                     } elseif ($jabatanStruktural !== '' && $jabatanFungsional !== '') {
@@ -334,6 +334,41 @@ class SimpegController extends Controller
                     } else {
                         $jabatan_aktif = '';
                     }
+
+                    // Jenis Pegawai 
+                    $id_jns_pegawai = null;
+
+                    if ($item->jenisPegawai == 'Dosen') {
+                        $id_jns_pegawai = '99eaad80-f677-4f64-8a85-cbb5d7e01f32';
+                    } elseif ($item->jenisPegawai == 'Dosen DT') {
+                        $id_jns_pegawai = '99eaad91-2ce9-4a99-8d80-1c351f69cb81';
+                    } elseif ($item->jenisPegawai == 'Tenaga Kependidikan') {
+                        $id_jns_pegawai = "99eaad7b-b9c5-48eb-b902-e147913138ff";
+                    }
+
+                    // ID Kategori Pegawai
+                    $id_kat_pegawai = match (true) {
+                        // PNS
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && $item->kategoriPegawai == 'PNS' => '6a278f97-a0f9-4ff9-83ce-021673cf0541',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && $item->kategoriPegawai == 'PNS' => '962e8132-dc7c-4773-9ed3-de541786db82',
+                        // CPNS
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && $item->kategoriPegawai == 'CPNS' => '38f8f789-4e4d-400e-a921-27a1c381e333',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && $item->kategoriPegawai == 'CPNS' => '2fee17dd-6799-4f72-902f-9a6c5a2c540f',
+                        // BLU
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && $item->kategoriPegawai == 'BLU' => '04f685e5-8bff-4657-aac2-74551a948f7d',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && $item->kategoriPegawai == 'BLU' => 'c0aa3763-003e-49e0-989e-bb7e22df60d9',
+                        // PPPK
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && $item->kategoriPegawai == 'PPPK' => '99ff2746-4a48-4712-9092-ace854d8ace2',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && $item->kategoriPegawai == 'PPPK' => '99ff276f-e223-4de1-959b-0c296723bb32',
+                        // PKWT
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && $item->kategoriPegawai == 'PKWT' => '8210d999-c11d-4c5d-bac7-5574d03ce5ed',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && $item->kategoriPegawai == 'PKWT' => 'd3dff2c5-1353-4c01-8d50-95eb3df963d5',
+                        // Honorer, Non BLU, Outsourcing
+                        ($item->jenisPegawai == 'Dosen' || $item->jenisPegawai == 'Dosen DT') && in_array($item->kategoriPegawai, ['Honorer', 'Non BLU', 'Outsourcing']) => 'e54422ab-0c17-439a-b2ad-9fa894739cb2',
+                        $item->jenisPegawai == 'Tenaga Kependidikan' && in_array($item->kategoriPegawai, ['Honorer', 'Non BLU', 'Outsourcing']) => '9a0bcb50-4ab5-4115-9b8d-b92e6386cfd5',
+                       
+                        default => null,
+                    };
 
                     return [
                         'id_pegawai'                => $item->kdPegawai ?? null,
@@ -347,16 +382,19 @@ class SimpegController extends Controller
                         'pangkat'                   => $item->pangkat ?? null,
                         'golongan'                  => $item->golongan ?? null,
                         'jenis_pegawai'             => $item->jenisPegawai ?? null,
+                        'id_jns_pegawai'            => $id_jns_pegawai,
                         'jabatan_struktural'        => $item->jabatanStruktural ?? null,
-                        'id_jabatan_fungsional'     => $item->pakdJabatanfungsionalngkat ?? null,
+                        'id_jabatan_fungsional'     => $item->kdJabatanfungsional ?? null,
                         'id_jabatan_struktural'     => $item->kdJabatanStruktural ?? null,
-                        'id_unit'                   => $item->kdUnitKerja ?? null,
+                        'id_unit'                   => null,
                         'nm_unit'                   => $item->namaUnitkerja ?? null,
-                        'id_kat_pegawai'            => null,
+                        'id_kat_pegawai'            => $id_kat_pegawai,
                         'nm_kat_pegawai'            => $item->kategoriPegawai ?? null,
                         'email'                     => $item->email ?? null,
                         'id_sts_pegawai'            => $id_sts,
                         'nm_sts_pegawai'            => $item->statusPegawai ?? null,
+                        'id_unit_simpeg'            => $item->kdUnitKerja ?? null,
+                        'id_unit_sister'            => null,
                         'created_at'                => now(),
                         'updated_at'                => now(),
                     ];
