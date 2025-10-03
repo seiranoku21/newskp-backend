@@ -344,7 +344,11 @@ class SimpegController extends Controller
                         $id_jns_pegawai = '99eaad91-2ce9-4a99-8d80-1c351f69cb81';
                     } elseif ($item->jenisPegawai == 'Tenaga Kependidikan') {
                         $id_jns_pegawai = "99eaad7b-b9c5-48eb-b902-e147913138ff";
+                    } elseif ($item->jenisPegawai == 'Dosen Luar Biasa') {
+                        $id_jns_pegawai = "a005e42b-f497-4ef7-97e5-4dec0b9eb23e";
                     }
+
+                    
 
                     // ID Kategori Pegawai
                     $id_kat_pegawai = match (true) {
