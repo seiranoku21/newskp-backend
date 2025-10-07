@@ -348,8 +348,6 @@ class SimpegController extends Controller
                         $id_jns_pegawai = "a005e42b-f497-4ef7-97e5-4dec0b9eb23e";
                     }
 
-                    
-
                     // ID Kategori Pegawai
                     $id_kat_pegawai = match (true) {
                         // PNS
