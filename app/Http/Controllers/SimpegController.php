@@ -420,4 +420,179 @@ class SimpegController extends Controller
             ], $httpCode);
         }
     }
+
+    function spg_jabatan(Request $request){
+        $curl1 = curl_init();
+        $curl2 = curl_init();
+
+        curl_setopt_array($curl1, array(
+            CURLOPT_URL => 'https://simpeg.untirta.ac.id/berbagidata/jabStruktural',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'simpeg2023: Springu2023',
+                'Content-Type: application/json',
+                'Connection: Keep-Alive',
+                'Accept: application/json'
+            ),
+        ));
+
+        curl_setopt_array($curl2, array(
+            CURLOPT_URL => 'https://simpeg.untirta.ac.id/berbagidata/jabNonstruktural',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'simpeg2023: Springu2023',
+                'Content-Type: application/json',
+                'Connection: Keep-Alive',
+                'Accept: application/json'
+            ),
+        ));
+
+        $mh = curl_multi_init();
+        curl_multi_add_handle($mh, $curl1);
+        curl_multi_add_handle($mh, $curl2);
+
+        $active = null;
+        do {
+            $mrc = curl_multi_exec($mh, $active);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+        while ($active && $mrc == CURLM_OK) {
+            if (curl_multi_select($mh) != -1) {
+                do {
+                    $mrc = curl_multi_exec($mh, $active);
+                } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+            }
+        }
+
+        $response1 = curl_multi_getcontent($curl1);
+        $response2 = curl_multi_getcontent($curl2);
+        $httpCode1 = curl_getinfo($curl1, CURLINFO_HTTP_CODE);
+        $httpCode2 = curl_getinfo($curl2, CURLINFO_HTTP_CODE);
+
+        curl_multi_remove_handle($mh, $curl1);
+        curl_multi_remove_handle($mh, $curl2);
+        curl_multi_close($mh);
+        curl_close($curl1);
+        curl_close($curl2);
+
+        if ($httpCode1 == 200 && $httpCode2 == 200) {
+            $decodedResponse1 = json_decode($response1);
+            $decodedResponse2 = json_decode($response2);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $data = [];
+
+                // Process struktural jabatan
+                if (isset($decodedResponse1->data) && is_array($decodedResponse1->data)) {
+                    $data = array_map(function($item) {
+                        $JJ = $item->jenisJabatan ?? null;
+                        $KJ = $item->kategoriJabatan ?? null;
+
+                        $id_jns_jabatan = null;
+                        if ($JJ == 0 && $KJ == 1) {
+                            $id_jns_jabatan = '4452ced0-8006-455d-a053-1edc5136d433';
+                        } elseif ($JJ == 0 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        } elseif ($JJ == 1 && $KJ == 1) {
+                            $id_jns_jabatan = '92f51eaf-ad52-4215-ae7b-4c5ab1594366';
+                        } elseif ($JJ == 1 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        } elseif ($JJ == 2 && $KJ == 2) {
+                            $id_jns_jabatan = '9b2cbbee-22f6-40fe-8923-c80eef4e88ae';
+                        } elseif ($JJ == 3 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        }
+
+                        return [
+                            'id_ref_jabatan' => $item->kodeData ?? null,
+                            'id_jns_jabatan' => $id_jns_jabatan,
+                            'nm_ref_jabatan' => $item->namaJabatan ?? null,
+                            'angka_kredit' => 0,
+                            'kode' => $item->kodeData ?? null,
+                            'is_show' => $item->statusJabatan ?? null,
+                            'id_old' => null,
+                            'grade' => $item->gradeJabatan ?? 0
+
+                            // 'nama_jabatan' => $item->namaJabatan ?? null,
+                            // 'jenis_jabatan' => $item->jenisJabatan ?? null,
+                            // 'kategori_jabatan' => $item->kategoriJabatan ?? null,
+                            // 'status' => $item->statusJabatan ?? null,
+                            // 'tipe' => 'struktural'
+                        ];
+                    }, $decodedResponse1->data);
+                }
+
+                // Process nonstruktural jabatan
+                if (isset($decodedResponse2->data) && is_array($decodedResponse2->data)) {
+                    $nonstrukturalData = array_map(function($item) {
+                        $JJ = $item->jenisJabatan ?? null;
+                        $KJ = $item->kategoriJabatan ?? null;
+
+                        $id_jns_jabatan = null;
+                        if ($JJ == 0 && $KJ == 1) {
+                            $id_jns_jabatan = '4452ced0-8006-455d-a053-1edc5136d433';
+                        } elseif ($JJ == 0 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        } elseif ($JJ == 1 && $KJ == 1) {
+                            $id_jns_jabatan = '92f51eaf-ad52-4215-ae7b-4c5ab1594366';
+                        } elseif ($JJ == 1 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        } elseif ($JJ == 2 && $KJ == 2) {
+                            $id_jns_jabatan = '9b2cbbee-22f6-40fe-8923-c80eef4e88ae';
+                        } elseif ($JJ == 3 && $KJ == 2) {
+                            $id_jns_jabatan = '3c186b9d-0fe5-4d9d-ade0-43e465f8a533';
+                        }
+
+                        return [
+                            'id_ref_jabatan' => $item->kodeData ?? null,
+                            'id_jns_jabatan' => $id_jns_jabatan,
+                            'nm_ref_jabatan' => $item->namaJabatan ?? null,
+                            'angka_kredit' => 0,
+                            'kode' => $item->kodeData ?? null,
+                            'is_show' => $item->statusJabatan ?? null,
+                            'id_old' => null,
+                            'grade' => $item->gradeJabatan ?? 0
+
+                            // 'nama_jabatan' => $item->namaJabatan ?? null,
+                            // 'jenis_jabatan' => $item->jenisJabatan ?? null,
+                            // 'kategori_jabatan' => $item->kategoriJabatan ?? null,
+                            // 'status' => $item->statusJabatan ?? null,
+                            // 'tipe' => 'nonstruktural'
+                        ];
+                    }, $decodedResponse2->data);
+
+                    $data = array_merge($data, $nonstrukturalData);
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $data
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid JSON response from server',
+                    'data' => []
+                ], 500);
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch data',
+                'data' => []
+            ], max($httpCode1, $httpCode2));
+        }
+    }
 }
