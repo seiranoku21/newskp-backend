@@ -1240,6 +1240,90 @@ class AglobalController extends Controller
 
     // ---REFERENSI END--
 
+    // ---REKAP POIN SEMESTER
+    public function rekap_poin_semester(Request $request){
+        $periode_awal = $request->periode_awal; 
+        $periode_akhir = $request->periode_akhir;
+        $nip = $request->nip;
+        $semester = $request->semester;
+        $id_periode = $request->id_periode; //uuid dari periode
+
+        // Validasi parameter periode
+        if(empty($periode_awal) || empty($periode_akhir)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode awal dan periode akhir harus diisi',
+                'data' => []
+            ], 400);
+        }
+
+        try {
+            // Query data from skp_kontrak table and group by pegawai_nip
+            $query = DB::table('skp_kontrak')
+                ->whereBetween('periode_awal', [$periode_awal, $periode_akhir])
+                ->whereBetween('periode_akhir', [$periode_awal, $periode_akhir])
+                ->whereNotNull('bobot_persen') // Only include records where bobot_persen is not null
+                ->where('bobot_persen', '!=', ''); // And not empty string
+
+            // Add NIP filter if provided 
+            if (!empty($nip)) {
+                $query->where('pegawai_nip', $nip);
+            }
+
+            $data = $query->select(
+                    DB::raw(($semester !== null ? (int)$semester : 'NULL') . ' as semester'),
+                    DB::raw("'" . $id_periode . "' as id_periode"),
+                    DB::raw("DATE_FORMAT('" . $periode_awal . "', '%Y-%m-%d') as periode_awal"),
+                    DB::raw("DATE_FORMAT('" . $periode_akhir . "', '%Y-%m-%d') as periode_akhir"),
+                    
+                    'pegawai_nip',
+                    'pegawai_email',
+                    'pegawai_nama', 
+                    DB::raw('SUM(poin) as poin_aktifitas'),
+                    DB::raw('SUM(bobot_persen) / COUNT(*) as bobot_persen'),
+                    DB::raw('COUNT(*) as jumlah_ajuan')
+                    
+                )
+                ->groupBy('pegawai_nip', 'pegawai_email', 'pegawai_nama')
+                ->get();
+
+            // Add poin_remun calculation based on formula (bobot_persen/100)*28
+            $data = $data->map(function($item) {
+                $item->poin_remun = ($item->bobot_persen / 100) * 28;
+                // Add poin_remun_akhir calculation
+                $item->poin_remun_akhir = $item->poin_remun >= 28 ? 28 : $item->poin_remun;
+                return $item; 
+            });
+
+            if($data->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan',
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data rekap poin semester berhasil diambil',
+                'periode' => [
+                    'awal' => $periode_awal,
+                    'akhir' => $periode_akhir,
+                    'id_periode' => $id_periode
+                ],
+                'semester' => $semester,
+                'data' => $data
+            ]);
+
+        } catch(\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
     // ---HTML OOUTPUT START
 
     // ---Portofolio
