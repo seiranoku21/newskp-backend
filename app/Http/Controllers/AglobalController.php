@@ -1275,7 +1275,7 @@ class AglobalController extends Controller
                     DB::raw("'" . $id_periode . "' as id_periode"),
                     DB::raw("DATE_FORMAT('" . $periode_awal . "', '%Y-%m-%d') as periode_awal"),
                     DB::raw("DATE_FORMAT('" . $periode_akhir . "', '%Y-%m-%d') as periode_akhir"),
-                    
+                    'pegawai_id',
                     'pegawai_nip',
                     'pegawai_email',
                     'pegawai_nama', 
@@ -1284,7 +1284,7 @@ class AglobalController extends Controller
                     DB::raw('COUNT(*) as jumlah_ajuan')
                     
                 )
-                ->groupBy('pegawai_nip', 'pegawai_email', 'pegawai_nama')
+                ->groupBy('pegawai_nip', 'pegawai_email', 'pegawai_nama','pegawai_id')
                 ->get();
 
             // Add poin_remun calculation based on formula (bobot_persen/100)*28
