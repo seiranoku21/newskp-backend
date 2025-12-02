@@ -23,7 +23,6 @@ class SyncIdPegawai extends Command
         $this->info('Memulai Sinkronisasi pegawai_id...');
 
         try {
-            // Get all unique emails from skp_kontrak
             $emailOption = $this->option('email');
 
             $query = DB::table('skp_kontrak')

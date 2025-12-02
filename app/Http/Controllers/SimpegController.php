@@ -595,4 +595,100 @@ class SimpegController extends Controller
             ], max($httpCode1, $httpCode2));
         }
     }
+
+    function spg_presensi(Request $request){
+        $nip = $request->nip;
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://simpeg.untirta.ac.id/berbagidata/rekapKehadiran?nip='.$nip.'&bulan='.$bulan.'&tahun='.$tahun,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+                'simpeg2023: Springu2023',
+                'Content-Type: application/json',
+                'Connection: Keep-Alive',
+                'Accept: application/json'
+            ),
+        ));
+       
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($httpCode == 200) {
+            $decodedResponse = json_decode($response);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                // Check if the response itself is an array of objects
+                if (is_array($decodedResponse)) {
+                    $filteredData = array_map(function($item) use ($request) {
+                        return [
+                            'bulan' => $item->bulanData ?? null,
+                            'tahun' => $item->tahunData ?? null,
+                            'id_pegawai' => $item->kode ?? null,
+                            'nip' => $item->nip ?? null,
+                            'nama' => $item->nama_peg ?? null,
+                            'jml_hadir' => $item->hadir ?? null,
+                            'id_periode' => $request->id_periode ?? null,
+                            'semester' => $request->semester ?? null,
+                        ];
+                    }, $decodedResponse);
+                    return response()->json([
+                        'status' => 'success',
+                        'data' => $filteredData
+                    ], 200);
+                }
+                // Otherwise, check if it has a 'data' key
+                if (isset($decodedResponse->data)) {
+                    $dataToProcess = [];
+                    if (is_array($decodedResponse->data)) {
+                        $dataToProcess = $decodedResponse->data;
+                    } elseif (is_object($decodedResponse->data)) {
+                        $dataToProcess = [$decodedResponse->data];
+                    }
+                    $filteredData = array_map(function($item) use ($request) {
+                        return [
+                            'bulan' => $item->bulanData ?? null,
+                            'tahun' => $item->tahunData ?? null,
+                            'id_pegawai' => $item->kode ?? null,
+                            'nip' => $item->nip ?? null,
+                            'nama' => $item->nama_peg ?? null,
+                            'jml_hadir' => $item->hadir ?? null,
+                            'id_periode' => $request->id_periode ?? null,
+                            'semester' => $request->semester ?? null,
+                        ];
+                    }, $dataToProcess);
+                    return response()->json([
+                        'status' => 'success',
+                        'data' => $filteredData
+                    ], 200);
+                }
+                // If 'data' is not set, or is not an array/object, return an empty array
+                return response()->json([
+                    'status' => 'success',
+                    'data' => []
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid JSON response from server',
+                    'data' => []
+                ], 500);
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch data',
+                'data' => []
+            ], $httpCode);
+        }
+    }   
+
 }
