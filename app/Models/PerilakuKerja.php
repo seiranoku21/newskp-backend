@@ -30,6 +30,14 @@ class PerilakuKerja extends Model
 	
 
 	/**
+     * Relasi ke tabel ref_perilaku_kerja
+     */
+	public function refPerilakuKerja()
+	{
+		return $this->belongsTo(RefPerilakuKerja::class, 'perilaku_kerja_kode', 'kode');
+	}
+
+	/**
      * Set search query for the model
 	 * @param \Illuminate\Database\Eloquent\Builder $query
 	 * @param string $text

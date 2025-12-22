@@ -49,8 +49,11 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---LAPORAN
     Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');
+    Route::get('lembar_skp', 'LapController@lembar_skp');
+    Route::get('lembar_skp_html', 'LapController@lembar_skp_html');
+    Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf');
+    Route::get('lembar_skp_excel', 'LapController@lembar_skp_excel');
 
-    
 
 
     // ---END INTEGRASI
@@ -301,3 +304,4 @@ Route::get('lap_aktifitas', 'AglobalController@laporan_aktifitas');
 // ---HTML OUTPUT
 Route::get('portofolio_html', 'AglobalController@get_portofolio_html');
 Route::get('lap_aktifitas_html', 'AglobalController@laporan_aktifitas_html');
+Route::get('lap_aktifitas_pdf', 'AglobalController@laporan_aktifitas_html')->defaults('download', true);

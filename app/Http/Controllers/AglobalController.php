@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\SimpegController;
 use App\Http\Controllers\SkpKontrakController;
 use App\Http\Controllers\AktifitasKinerjaController;
@@ -1499,6 +1500,7 @@ class AglobalController extends Controller
     public function laporan_aktifitas_html(Request $request){
         $nip = $request->input('nip');
         $tahun = $request->input('tahun');
+        $download = $request->input('download', false);
 
         $query = DB::table('aktifitas_kinerja');
 
@@ -1748,11 +1750,14 @@ class AglobalController extends Controller
         $html .= '<td class="border border-gray-300 px-2 py-1 text-center">'.$total_tautan.'</td></tr>';
 
         $html .= '</tbody></table>';
-        $html .= '</div>'; // overflow-x-auto
-
         $html .= '</div>';
 
-        return response($html, 200)->header('Content-Type', 'text/html');
+        if ($download) {
+            $pdf = PDF::loadHTML($html);
+            return $pdf->download('laporan_aktifitas_' . $nip . '_' . $tahun . '.pdf');
+        } else {
+            return response($html, 200)->header('Content-Type', 'text/html');
+        }
     }
 
     

@@ -180,4 +180,20 @@ class AktifitasKinerja extends Model
 	}
 	
 	public $timestamps = true;
+
+	/**
+	 * Relationship with RencanaHasilKerjaAtasan
+	 */
+	public function rencanaHasilKerjaAtasan()
+	{
+		return $this->belongsTo(RencanaHasilKerjaAtasan::class, 'rhka_id', 'id');
+	}
+
+	/**
+	 * Relationship with RencanaHasilKerjaItem
+	 */
+	public function rencanaHasilKerjaItem()
+	{
+		return $this->belongsTo(RencanaHasilKerjaItem::class, 'rhki_id', 'id');
+	}
 }
