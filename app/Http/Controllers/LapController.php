@@ -21,15 +21,22 @@ class LapController extends Controller
     public function lembar_skp(Request $request){
 
         $uid = $request->uid;
+        $tipe = $request->tipe ?? 2; // Default to 2 ("EVALUASI KINERJA PEGAWAI") if not provided
+
         $skp_kontrak = \DB::table('skp_kontrak')->where('uid', $uid)->first();
 
         // --SKP
         $skp_tipe = RefSkpTipe::where('id', $skp_kontrak->skp_tipe_id)->first();
         $skp_tipe_deskripsi = $skp_tipe->deskripsi;
         $skp_tipe_nama = $skp_tipe->skp_tipe;
+
         // ---Header
         $institusi = "UNIVERSITAS SULTAN AGENG TIRTAYASA";
-        $judul_1 = "EVALUASI KINERJA PEGAWAI";
+        if ($tipe == 1) {
+            $judul_1 = "SASARAN KINERJA PEGAWAI";
+        } else {
+            $judul_1 = "EVALUASI KINERJA PEGAWAI";
+        }
         $judul_2 = "PENDEKATAN HASIL KERJA " . $skp_tipe_nama;
         $header = [
             "institusi" => $institusi,
@@ -38,6 +45,7 @@ class LapController extends Controller
             "skp_tipe" => $skp_tipe_nama,
             "skp_tipe_deskripsi" => $skp_tipe_deskripsi
         ];
+
         // ---Periode
         $periodde_penilaian = $skp_kontrak->periode_awal . " - " . $skp_kontrak->periode_akhir;
         $tgl_awal = $skp_kontrak->periode_awal;
@@ -91,7 +99,7 @@ class LapController extends Controller
             'utama' => [],
             'tambahan' => []
         ];
-        
+
         foreach ($kinerja as $item) {
             $kategori = $item->rencanaHasilKerjaAtasan->kategori ?? null;
             if ($kategori === 'utama') {
@@ -179,12 +187,12 @@ class LapController extends Controller
                 "message" => "Data tidak ditemukan"
             ], 404);
         }
-        
 
     }
 
     public function lembar_skp_html(Request $request){
         $uid = $request->uid;
+        $tipe = $request->tipe ?? 2; // Default tipe = 2
         $skp_kontrak = \DB::table('skp_kontrak')->where('uid', $uid)->first();
 
         // --SKP
@@ -194,7 +202,7 @@ class LapController extends Controller
         // ---Header
         $logo = "https://skpv2.untirta.ac.id/images/favicon.png";
         $institusi = "UNIVERSITAS SULTAN AGENG TIRTAYASA";
-        $judul_1 = "EVALUASI KINERJA PEGAWAI";
+        $judul_1 = ($tipe == 1) ? "SASARAN KINERJA PEGAWAI" : "EVALUASI KINERJA PEGAWAI";
         $judul_2 = "PENDEKATAN HASIL KERJA " . $skp_tipe_nama;
         $header = [
             "logo" => $logo,
@@ -456,13 +464,23 @@ class LapController extends Controller
                 <!-- Hasil Kerja Utama -->
                 <table>
                     <tr class="section-title">
-                        <td colspan="4">HASIL KERJA UTAMA</td>
+                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '">HASIL KERJA UTAMA</td>
                     </tr>
-                    <tr class="bg-gray text-center">
+                    <tr class="bg-gray text-center">';
+                    
+                    if ($tipe == 1) {
+                        $html .= '
+                        <th width="5%">No</th>
+                        <th width="95%">Kegiatan</th>';
+                    } else {
+                        $html .= '
                         <th width="5%">No</th>
                         <th width="35%">Kegiatan</th>
                         <th width="30%">Ukuran Keberhasilan</th>
-                        <th width="30%">Realisasi</th>
+                        <th width="30%">Realisasi</th>';
+                    }
+                    
+                    $html .= '
                     </tr>';
                     
                     $no = 1;
@@ -471,19 +489,28 @@ class LapController extends Controller
                         $ukuran = $item->rencanaHasilKerjaItem->ukuran_keberhasilan ?? '-';
                         $realisasi = $item->rencanaHasilKerjaItem->realisasi ?? '-';
                         
-                        $html .= '
+                        if ($tipe == 1) {
+                            $html .= '
+                    <tr>
+                        <td class="text-center">' . $no++ . '</td>
+                        <td>' . $kegiatan . '</td>
+                    </tr>';
+                        } else {
+                            $html .= '
                     <tr>
                         <td class="text-center">' . $no++ . '</td>
                         <td>' . $kegiatan . '</td>
                         <td>' . $ukuran . '</td>
                         <td>' . $realisasi . '</td>
                     </tr>';
+                        }
                     }
                     
                     if (empty($hasil_kerja_grouped['utama'])) {
+                        $colspan = ($tipe == 1) ? '2' : '4';
                         $html .= '
                     <tr>
-                        <td colspan="4" class="text-center">Tidak ada data</td>
+                        <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
                     </tr>';
                     }
                     
@@ -493,13 +520,23 @@ class LapController extends Controller
                 <!-- Hasil Kerja Tambahan -->
                 <table>
                     <tr class="section-title">
-                        <td colspan="4">HASIL KERJA TAMBAHAN</td>
+                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '">HASIL KERJA TAMBAHAN</td>
                     </tr>
-                    <tr class="bg-gray text-center">
+                    <tr class="bg-gray text-center">';
+                    
+                    if ($tipe == 1) {
+                        $html .= '
+                        <th width="5%">No</th>
+                        <th width="95%">Kegiatan</th>';
+                    } else {
+                        $html .= '
                         <th width="5%">No</th>
                         <th width="35%">Kegiatan</th>
                         <th width="30%">Ukuran Keberhasilan</th>
-                        <th width="30%">Realisasi</th>
+                        <th width="30%">Realisasi</th>';
+                    }
+                    
+                    $html .= '
                     </tr>';
                     
                     $no = 1;
@@ -508,32 +545,47 @@ class LapController extends Controller
                         $ukuran = $item->rencanaHasilKerjaItem->ukuran_keberhasilan ?? '-';
                         $realisasi = $item->rencanaHasilKerjaItem->realisasi ?? '-';
                         
-                        $html .= '
+                        if ($tipe == 1) {
+                            $html .= '
+                    <tr>
+                        <td class="text-center">' . $no++ . '</td>
+                        <td>' . $kegiatan . '</td>
+                    </tr>';
+                        } else {
+                            $html .= '
                     <tr>
                         <td class="text-center">' . $no++ . '</td>
                         <td>' . $kegiatan . '</td>
                         <td>' . $ukuran . '</td>
                         <td>' . $realisasi . '</td>
                     </tr>';
+                        }
                     }
                     
                     if (empty($hasil_kerja_grouped['tambahan'])) {
+                        $colspan = ($tipe == 1) ? '2' : '4';
                         $html .= '
                     <tr>
-                        <td colspan="4" class="text-center">Tidak ada data</td>
+                        <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
                     </tr>';
                     }
                     
                     $html .= '
                 </table>
 
-                <!-- Rating Hasil Kerja -->
+                <!-- Rating Hasil Kerja -->';
+                
+                if ($tipe != 1) {
+                    $html .= '
                 <table>
                     <tr class="bg-gray">
                         <td width="30%"><strong>Rating Hasil Kerja</strong></td>
                         <td><strong>' . $rating_hasil_kerja . '</strong></td>
                     </tr>
-                </table>
+                </table>';
+                }
+                
+                $html .= '
 
                 <!-- Perilaku Kerja -->
                 <table>
@@ -572,7 +624,10 @@ class LapController extends Controller
                     $html .= '
                 </table>
 
-                <!-- Rating Perilaku Kerja -->
+                <!-- Rating Perilaku Kerja -->';
+                
+                if ($tipe != 1) {
+                    $html .= '
                 <table>
                     <tr class="bg-gray">
                         <td width="30%"><strong>Rating Perilaku Kerja</strong></td>
@@ -586,7 +641,10 @@ class LapController extends Controller
                         <td width="30%"><strong>Predikat Kinerja</strong></td>
                         <td><strong>' . $predikat_kinerja . '</strong></td>
                     </tr>
-                </table>
+                </table>';
+                }
+                
+                $html .= '
 
                 <!-- Tanda Tangan -->
                 <table style="margin-top: 30px;">
@@ -639,6 +697,7 @@ class LapController extends Controller
         $uid = $request->uid;
         $download = $request->input('download', 'true'); // Default: true (download)
         $isDownload = filter_var($download, FILTER_VALIDATE_BOOLEAN);
+        $tipe = $request->input('tipe', '0'); // Default: 0 (evaluasi kinerja)
         
         $skp_kontrak = \DB::table('skp_kontrak')->where('uid', $uid)->first();
 
@@ -660,7 +719,7 @@ class LapController extends Controller
         $logo_html = '<img src="' . $logo_url . '" alt="Logo Untirta" style="width: 80px; height: 80px; display: block; margin: 0 auto 10px;">';
         
         $institusi = "UNIVERSITAS SULTAN AGENG TIRTAYASA";
-        $judul_1 = "EVALUASI KINERJA PEGAWAI";
+        $judul_1 = ($tipe == '1') ? "SASARAN KINERJA PEGAWAI" : "EVALUASI KINERJA PEGAWAI";
         $judul_2 = "PENDEKATAN HASIL KERJA " . $skp_tipe_nama;
         $header = [
             "logo_html" => $logo_html,
@@ -939,13 +998,19 @@ class LapController extends Controller
             <!-- Hasil Kerja Utama -->
             <table>
                 <tr class="section-title">
-                    <td colspan="4">HASIL KERJA UTAMA</td>
+                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '">HASIL KERJA UTAMA</td>
                 </tr>
                 <tr class="bg-gray text-center">
                     <th width="5%">No</th>
-                    <th width="35%">Kegiatan</th>
+                    <th width="' . ($tipe == '1' ? '95%' : '35%') . '">Kegiatan</th>';
+                    
+                if ($tipe != '1') {
+                    $html .= '
                     <th width="30%">Ukuran Keberhasilan</th>
-                    <th width="30%">Realisasi</th>
+                    <th width="30%">Realisasi</th>';
+                }
+                
+                $html .= '
                 </tr>';
                 
                 $no = 1;
@@ -957,16 +1022,23 @@ class LapController extends Controller
                     $html .= '
                 <tr>
                     <td class="text-center">' . $no++ . '</td>
-                    <td>' . $kegiatan . '</td>
+                    <td>' . $kegiatan . '</td>';
+                    
+                    if ($tipe != '1') {
+                        $html .= '
                     <td>' . $ukuran . '</td>
-                    <td>' . $realisasi . '</td>
+                    <td>' . $realisasi . '</td>';
+                    }
+                    
+                    $html .= '
                 </tr>';
                 }
                 
                 if (empty($hasil_kerja_grouped['utama'])) {
+                    $colspan = ($tipe == '1') ? '2' : '4';
                     $html .= '
                 <tr>
-                    <td colspan="4" class="text-center">Tidak ada data</td>
+                    <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
                 </tr>';
                 }
                 
@@ -976,13 +1048,19 @@ class LapController extends Controller
             <!-- Hasil Kerja Tambahan -->
             <table>
                 <tr class="section-title">
-                    <td colspan="4">HASIL KERJA TAMBAHAN</td>
+                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '">HASIL KERJA TAMBAHAN</td>
                 </tr>
                 <tr class="bg-gray text-center">
                     <th width="5%">No</th>
-                    <th width="35%">Kegiatan</th>
+                    <th width="' . ($tipe == '1' ? '95%' : '35%') . '">Kegiatan</th>';
+                    
+                if ($tipe != '1') {
+                    $html .= '
                     <th width="30%">Ukuran Keberhasilan</th>
-                    <th width="30%">Realisasi</th>
+                    <th width="30%">Realisasi</th>';
+                }
+                
+                $html .= '
                 </tr>';
                 
                 $no = 1;
@@ -994,29 +1072,44 @@ class LapController extends Controller
                     $html .= '
                 <tr>
                     <td class="text-center">' . $no++ . '</td>
-                    <td>' . $kegiatan . '</td>
+                    <td>' . $kegiatan . '</td>';
+                    
+                    if ($tipe != '1') {
+                        $html .= '
                     <td>' . $ukuran . '</td>
-                    <td>' . $realisasi . '</td>
+                    <td>' . $realisasi . '</td>';
+                    }
+                    
+                    $html .= '
                 </tr>';
                 }
                 
                 if (empty($hasil_kerja_grouped['tambahan'])) {
+                    $colspan = ($tipe == '1') ? '2' : '4';
                     $html .= '
                 <tr>
-                    <td colspan="4" class="text-center">Tidak ada data</td>
+                    <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
                 </tr>';
                 }
                 
                 $html .= '
             </table>
 
+            ';
+            
+            // Rating Hasil Kerja hanya ditampilkan jika tipe != 1
+            if ($tipe != '1') {
+                $html .= '
             <!-- Rating Hasil Kerja -->
             <table>
                 <tr class="bg-gray">
                     <td width="30%"><strong>Rating Hasil Kerja</strong></td>
                     <td><strong>' . $rating_hasil_kerja . '</strong></td>
                 </tr>
-            </table>
+            </table>';
+            }
+            
+            $html .= '
 
             <!-- Perilaku Kerja -->
             <table>
@@ -1053,7 +1146,11 @@ class LapController extends Controller
                 }
                 
                 $html .= '
-            </table>
+            </table>';
+            
+            // Rating Perilaku Kerja dan Predikat Kinerja hanya ditampilkan jika tipe != 1
+            if ($tipe != '1') {
+                $html .= '
 
             <!-- Rating Perilaku Kerja -->
             <table>
@@ -1069,7 +1166,10 @@ class LapController extends Controller
                     <td width="30%"><strong>Predikat Kinerja</strong></td>
                     <td><strong>' . $predikat_kinerja . '</strong></td>
                 </tr>
-            </table>
+            </table>';
+            }
+            
+            $html .= '
 
             <!-- Tanda Tangan -->
             <table style="margin-top: 8px; margin-bottom: 4px;">
@@ -1128,13 +1228,4 @@ class LapController extends Controller
         }
     }
 
-    public function lembar_skp_excel(Request $request){
-        $uid = $request->uid;
-        $skp_kontrak = \DB::table('skp_kontrak')->where('uid', $uid)->first();
-
-        // --SKP
-        $skp_tipe = RefSkpTipe::where('id', $skp_kontrak->skp_tipe_id)->first();
-        $skp_tipe_deskripsi = $skp_tipe->deskripsi;
-        $skp_tipe_nama = $skp_tipe->skp_tipe;
-    }
 }
