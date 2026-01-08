@@ -14,30 +14,6 @@ use Illuminate\Support\Str;
 use Google\Client as Google_Client;
 
 class AuthController extends Controller{
-
-	private function getUserLoginData($user = null){
-		if(!$user){
-			$user = auth()->user();
-		}
-		
-		// Cek user Login via SSO atw Simpeg
-		if($user->sso_token || $user->simpeg_token) {
-			// Untuk User SSO/Simpeg , gunakan token yg ada masing2
-			return [
-				'token' => $user->sso_token ?? $user->simpeg_token,
-				'is_sso' => !empty($user->sso_token),
-				'is_simpeg' => !empty($user->simpeg_token)
-			];
-		}
-		
-		// Untuk User Reguler, buat token baru
-		$accessToken = $user->createToken('authToken')->accessToken;
-		return [
-			'token' => $accessToken,
-			'is_sso' => false,
-			'is_simpeg' => false
-		];
-	}
 	
 	private function checkSsoUser($userData) {
 		// Implement logic to find or create user based on SSO data
@@ -72,8 +48,33 @@ class AuthController extends Controller{
             return $this->reject("Username or password not correct", 400);
         }
 		$user = auth()->user();
-		$loginData = $this->getUserLoginData($user);
-        return $this->respond($loginData);
+		
+		// Generate JWT token for regular login
+		$token = $this->generateUserToken($user);
+		
+		// Set cookie untuk access_token (sama seperti SSO)
+		$cookie = cookie(
+			'access_token',              // nama cookie
+			$token,                      // value (JWT token)
+			config('auth.jwt_duration'), // durasi dalam menit
+			'/',                         // path
+			null,                        // domain
+			false,                       // secure (set true di production dengan HTTPS)
+			true,                        // httpOnly
+			false,                       // raw
+			'lax'                        // sameSite
+		);
+		
+		// Return response dengan token
+		return response()->json([
+			'token' => $token,
+			'user' => [
+				'id' => $user->user_id,
+				'username' => $user->username,
+				'email' => $user->email,
+				'name' => $user->name_info
+			]
+		], 200)->cookie($cookie);
 	}
 
 	/**
