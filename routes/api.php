@@ -128,7 +128,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 	Route::get('users/view/{rec_id}', 'UsersController@view');	
 	Route::any('account/edit', 'AccountController@edit');	
 	Route::get('account', 'AccountController@index');	
-	Route::get('account/currentuserdata', 'AccountController@currentuserdata');	
+	// Route::get('account/currentuserdata', 'AccountController@currentuserdata'); // Moved outside auth:api - uses JWT middleware instead
 	Route::post('users/add', 'UsersController@add');	
 	Route::any('users/edit/{rec_id}', 'UsersController@edit');	
 	Route::any('users/delete/{rec_id}', 'UsersController@delete');
@@ -137,6 +137,9 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
 // Create a new middleware group that checks for valid tokens
 // Remove the middleware group for api.key
+
+    // JWT-protected routes (uses global JWTAuthentication middleware from api group)
+    Route::get('account/currentuserdata', 'AccountController@currentuserdata');
 
     // Move all the routes previously inside the api.key middleware group
     Route::get('home', 'HomeController@index');

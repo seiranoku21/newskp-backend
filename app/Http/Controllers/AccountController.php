@@ -60,12 +60,24 @@ class AccountController extends Controller{
 			$userRoleName = $user->getRoleNames();
 			$rolesMenu = $user->getRolesMenu();
 
-			$data = [
-				"user" => $user,
+			// Prepare user data with photo
+			$userData = [
+				"id" => $user->user_id,
+				"username" => $user->username,
+				"email" => $user->email,
+				"name" => $user->name_info,
+				"picture" => $user->photo,
+				"nip" => $user->nip ?? null,
+				"jabatan" => $user->jabatan ?? null,
+				"unit_kerja" => $user->unit_kerja ?? null,
+				"user_role_id" => $user->user_role_id,
+			];
+
+			$data = array_merge($userData, [
 				"pages" => $userPages,
 				"roles" => $userRoleName,
 				"roles_menu" => $rolesMenu
-			];
+			]);
 		
 		return $this->respond($data);
 	}

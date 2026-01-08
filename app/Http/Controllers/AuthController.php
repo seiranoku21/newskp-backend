@@ -89,6 +89,7 @@ class AuthController extends Controller{
 			$idToken = $request->input('id_token');
 			$email = $request->input('email');
 			$name = $request->input('name');
+			$picture = $request->input('picture');
 
 			// Verify Google ID token
 			if ($provider === 'google') {
@@ -127,11 +128,19 @@ class AuthController extends Controller{
 					$user->username = $email;
 					$user->email = $email;
 					$user->name_info = $name ?? $payload['name'] ?? $email;
+					$user->photo = $picture ?? $payload['picture'] ?? null;
 					$user->password = bcrypt(Str::random(32)); // Random password for SSO users
 					$user->email_verified_at = now(); // Auto-verify email for Google users
 					$user->user_role_id = 2; // Default role (adjust as needed)
 					$user->auth_provider = 'google';
 					$user->save();
+				} else {
+					// Update existing user's photo if provided
+					if ($picture || isset($payload['picture'])) {
+						$user->photo = $picture ?? $payload['picture'];
+						$user->save();
+					}
+				}
 
 					// Option B: Return error if user not found
 					// return response()->json([
@@ -163,7 +172,8 @@ class AuthController extends Controller{
 						'id' => $user->user_id,
 						'username' => $user->username,
 						'email' => $user->email,
-						'name' => $user->name_info
+						'name' => $user->name_info,
+						'picture' => $user->photo
 					]
 				], 200)->cookie($cookie);
 			}

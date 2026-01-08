@@ -19,9 +19,30 @@ class JWTAuthentication
      */
     public function handle(Request $request, Closure $next)
     {
-        // Skip JWT check for auth routes
-        if ($request->is('api/auth/*')) {
-            return $next($request);
+        // Skip JWT check for public routes
+        $publicRoutes = [
+            'api/auth/*',
+            'api/login',
+            'api/setting',
+            'api/components_data/*',
+            'api/simpeg_*',
+            'api/account/currentuserdata_sso',
+            'api/account/currentuserdata_spl',
+            'api/sso_role',
+            'api/spl_role',
+            'api/get_pegawai',
+            'api/ref_*',
+            'api/lap_*',
+            'api/portofolio_html',
+            'api/fileuploader/*',
+            'api/skp_tipe_deskripsi/*',
+            'api/home',
+        ];
+
+        foreach ($publicRoutes as $pattern) {
+            if ($request->is($pattern)) {
+                return $next($request);
+            }
         }
 
         // Get JWT token from cookie or Authorization header
