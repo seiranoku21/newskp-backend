@@ -30,7 +30,7 @@ class Users extends Authenticatable
      *
      * @var array
      */
-	protected $fillable = ["username","password","telp","photo","email","prodi_id","user_role_id","name_info"];
+	protected $fillable = ["username","password","telp","photo","email","prodi_id","user_role_id","name_info","auth_provider","email_verified_at"];
 	/**
      * Table fields which are not included in select statement
      *
@@ -243,6 +243,7 @@ class Users extends Authenticatable
 	
 	private $roleNames = [];
 	private $userPages = [];
+	private $rolesMenu = [];
 	
 	/**
 	* Get the permissions of the user.
@@ -311,5 +312,19 @@ class Users extends Authenticatable
 	public function canAccess($path){
 		$userPages = $this->getUserPages();
 		return in_array($path, $userPages);
+	}
+	
+	/**
+     * return user roles menu based on role_id
+     * @return array
+     */
+	public function getRolesMenu(){
+		if(empty($this->rolesMenu)){ // ensure we make db query once
+			$this->rolesMenu = \DB::table('roles_menu')
+				->where('role_id', $this->user_role_id)
+				->get()
+				->toArray();
+		}
+		return $this->rolesMenu;
 	}
 }

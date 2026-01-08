@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Users;
 use App\Http\Requests\UsersRegisterRequest;
+use App\Http\Requests\SsoLoginRequest;
 use Exception;
 use App\Helpers\JWTHelper;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Google\Client as Google_Client;
 
 class AuthController extends Controller{
 
@@ -74,6 +76,115 @@ class AuthController extends Controller{
         return $this->respond($loginData);
 	}
 
+	/**
+	 * SSO Login via Google
+	 * Endpoint: POST /api/auth/sso
+	 * 
+	 * @param SsoLoginRequest $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
+	function sso(SsoLoginRequest $request) {
+		try {
+			$provider = $request->input('provider');
+			$idToken = $request->input('id_token');
+			$email = $request->input('email');
+			$name = $request->input('name');
+
+			// Verify Google ID token
+			if ($provider === 'google') {
+				$client = new Google_Client(['client_id' => config('services.google.client_id')]);
+				
+				try {
+					$payload = $client->verifyIdToken($idToken);
+				} catch (Exception $e) {
+					return response()->json([
+						'error' => 'Invalid ID token',
+						'message' => 'Google ID token verification failed: ' . $e->getMessage()
+					], 401);
+				}
+
+				if (!$payload) {
+					return response()->json([
+						'error' => 'Invalid ID token',
+						'message' => 'Google ID token verification failed'
+					], 401);
+				}
+
+				// Verify email matches
+				if ($payload['email'] !== $email) {
+					return response()->json([
+						'error' => 'Email mismatch',
+						'message' => 'The email in the token does not match the provided email'
+					], 401);
+				}
+
+				// Find or create user
+				$user = Users::where('email', $email)->first();
+
+				if (!$user) {
+					// Option A: Auto-register user
+					$user = new Users();
+					$user->username = $email;
+					$user->email = $email;
+					$user->name_info = $name ?? $payload['name'] ?? $email;
+					$user->password = bcrypt(Str::random(32)); // Random password for SSO users
+					$user->email_verified_at = now(); // Auto-verify email for Google users
+					$user->user_role_id = 2; // Default role (adjust as needed)
+					$user->auth_provider = 'google';
+					$user->save();
+
+					// Option B: Return error if user not found
+					// return response()->json([
+					//     'error' => 'User not found',
+					//     'message' => 'No user account found with this email address'
+					// ], 404);
+				}
+
+				// Generate JWT token using existing helper (menggunakan JWT_SECRET yang sama dengan frontend)
+				$token = $this->generateUserToken($user);
+
+				// Set cookie untuk access_token (sesuai middleware CheckToken)
+				$cookie = cookie(
+					'access_token',              // nama cookie (diubah dari session_token)
+					$token,                     // value (JWT token)
+					config('auth.jwt_duration'), // durasi dalam menit
+					'/',                        // path
+					null,                       // domain
+					false,                      // secure (set true di production dengan HTTPS)
+					true,                       // httpOnly
+					false,                      // raw
+					'lax'                       // sameSite
+				);
+
+				// Return response dengan cookie dan data user
+				return response()->json([
+					'token' => $token,
+					'user' => [
+						'id' => $user->user_id,
+						'username' => $user->username,
+						'email' => $user->email,
+						'name' => $user->name_info
+					]
+				], 200)->cookie($cookie);
+			}
+
+			return response()->json([
+				'error' => 'Invalid provider',
+				'message' => 'Unsupported authentication provider'
+			], 400);
+
+		} catch (Exception $e) {
+			return response()->json([
+				'error' => 'SSO authentication failed',
+				'message' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Legacy SSO Login (kept for backward compatibility)
+	 * @deprecated Use sso() method instead
+	 */
 	function ssoLogin(Request $request) {
 		try {
 			// Assuming SSO/SPL provides user data in the request body or query parameters
@@ -113,5 +224,88 @@ class AuthController extends Controller{
 	private function getUserIDFromJwt($token){
 		$userId =  JWTHelper::decode($token);
  		return $userId;
+	}
+
+	/**
+	 * SSO Login untuk Testing (DEVELOPMENT ONLY!)
+	 * Endpoint: POST /api/auth/sso-test
+	 * 
+	 * Endpoint ini bypass Google verification untuk keperluan testing
+	 * JANGAN AKTIFKAN DI PRODUCTION!
+	 * 
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
+	function ssoTest(Request $request) {
+		// Hanya izinkan di environment development
+		if (config('app.env') !== 'local' && config('app.env') !== 'development') {
+			return response()->json([
+				'error' => 'Forbidden',
+				'message' => 'This endpoint is only available in development environment'
+			], 403);
+		}
+
+		try {
+			$email = $request->input('email');
+			$name = $request->input('name', 'Test User');
+
+			// Validasi basic
+			if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				return response()->json([
+					'error' => 'Invalid email',
+					'message' => 'Please provide a valid email address'
+				], 400);
+			}
+
+			// Find or create user (sama seperti SSO asli)
+			$user = Users::where('email', $email)->first();
+
+			if (!$user) {
+				// Auto-register user
+				$user = new Users();
+				$user->username = $email;
+				$user->email = $email;
+				$user->name_info = $name;
+				$user->password = bcrypt(Str::random(32));
+				$user->email_verified_at = now();
+				$user->user_role_id = 2;
+				$user->auth_provider = 'google';
+				$user->save();
+			}
+
+			// Generate JWT token
+			$token = $this->generateUserToken($user);
+
+			// Set cookie access_token
+			$cookie = cookie(
+				'access_token',
+				$token,
+				config('auth.jwt_duration'),
+				'/',
+				null,
+				false,
+				true,
+				false,
+				'lax'
+			);
+
+			// Return response
+			return response()->json([
+				'token' => $token,
+				'user' => [
+					'id' => $user->user_id,
+					'username' => $user->username,
+					'email' => $user->email,
+					'name' => $user->name_info
+				],
+				'note' => 'This is a test endpoint without Google verification'
+			], 200)->cookie($cookie);
+
+		} catch (Exception $e) {
+			return response()->json([
+				'error' => 'SSO test failed',
+				'message' => $e->getMessage()
+			], 500);
+		}
 	}
 }

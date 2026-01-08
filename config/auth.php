@@ -138,6 +138,8 @@ return [
     |
     */
     'jwt_secret' => env('JWT_SECRET', ''),
+    'jwt_algorithm' => env('JWT_ALGORITHM', 'HS256'),
+    'jwt_duration' => env('JWT_DURATION', 30), // dalam menit
 
     /*
     |--------------------------------------------------------------------------

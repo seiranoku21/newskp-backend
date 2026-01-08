@@ -42,6 +42,7 @@ class Kernel extends HttpKernel
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            \App\Http\Middleware\JWTAuthentication::class,
             // \App\Http\Middleware\SSOAuthentication::class,
         ],
     ];
@@ -72,6 +73,7 @@ class Kernel extends HttpKernel
         'otpverification' => \App\Http\Middleware\OtpVerification::class,
         'sso.authentication' => \App\Http\Middleware\SSOAuthentication::class,
         'check.token' => \App\Http\Middleware\CheckToken::class,
+        'jwt.auth' => \App\Http\Middleware\JWTAuthentication::class,
         'api.key' => \App\Http\Middleware\ApiKey::class,
     ];
 }

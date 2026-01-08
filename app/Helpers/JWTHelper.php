@@ -3,6 +3,7 @@
 namespace App\Helpers;
 use Exception;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 class JWTHelper
 {
 	// encoding data
@@ -12,7 +13,8 @@ class JWTHelper
 			$algorithm = config('auth.jwt_algorithm');
 			$duration = config('auth.jwt_duration');
 			$iat = time(); // time of token issued at
-            $nbf = $iat + 10; //not before in seconds
+            //$nbf = $iat + 10; //not before in seconds
+			$nbf = $iat;
             $exp = strtotime("+$duration minutes"); // expire time of token in seconds
 			$iss = config('app.url');
 			$payload = array(
@@ -36,7 +38,7 @@ class JWTHelper
 		try{
 			$secret = config('auth.jwt_secret');
 			$algorithm = config('auth.jwt_algorithm');
-			$decoded = JWT::decode($jwt, $secret, [$algorithm]);
+			$decoded = JWT::decode($jwt, new Key($secret, $algorithm));
 			return $decoded->data;
 		}
 		catch(Exception $e){

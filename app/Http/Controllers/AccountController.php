@@ -58,10 +58,13 @@ class AccountController extends Controller{
 			$user = auth()->user();
 			$userPages = $user->getUserPages();
 			$userRoleName = $user->getRoleNames();
+			$rolesMenu = $user->getRolesMenu();
+
 			$data = [
 				"user" => $user,
 				"pages" => $userPages,
 				"roles" => $userRoleName,
+				"roles_menu" => $rolesMenu
 			];
 		
 		return $this->respond($data);
