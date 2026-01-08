@@ -1,1 +1,64 @@
-# BACKEND REST-API NewsSKP Untirta
+# BACKEND REST-API NewSKP Untirta
+
+## 🚀 Recent Updates
+
+### ✨ Google SSO Authentication (January 6, 2026)
+
+Sistem autentikasi Google SSO lengkap telah diimplementasikan dan **terintegrasi dengan pola frontend** yang sudah ada!
+
+**📌 API Endpoint Baru:**
+```
+POST /api/auth/sso
+```
+
+**🔗 Integrasi dengan Frontend:**
+- ✅ Menggunakan **JWT_SECRET yang sama** dengan frontend
+- ✅ Token disimpan di **cookie `session_token`** (sesuai pola frontend)
+- ✅ HttpOnly cookie untuk keamanan maksimal
+- ✅ Compatible dengan sistem autentikasi existing
+
+**📚 Dokumentasi Lengkap:**
+- **[🚀 Integrasi Frontend](./INTEGRASI_FRONTEND.md)** - Panduan integrasi dengan frontend (BACA INI DULU!)
+- [Quick Start Guide](./docs/README_SSO.md) - Mulai dalam 5 menit
+- [API Documentation](./docs/SSO_AUTHENTICATION.md) - Referensi API lengkap
+- [Frontend Integration Detail](./docs/SSO_FRONTEND_INTEGRATION.md) - Detail integrasi frontend
+- [Environment Setup](./docs/ENVIRONMENT_SETUP.md) - Setup Google Cloud Console
+- [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Checklist deployment production
+- [Implementation Summary](./SSO_IMPLEMENTATION_SUMMARY.md) - Ringkasan semua perubahan
+
+**🧪 Halaman Test:**
+- [Test SSO Login](./public/test-sso-login.html) - Interface testing interaktif
+
+**🎯 Quick Start:**
+```bash
+# 1. Jalankan migrasi
+php artisan migrate
+
+# 2. Tambahkan ke .env (JWT_SECRET HARUS SAMA dengan frontend!)
+JWT_SECRET=F1kweiwun9P4#$aR$p3f44GKMmpn^WS93xl@THlN38@=
+JWT_ALGORITHM=HS256
+JWT_DURATION=30
+
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+
+# 3. Clear cache
+php artisan config:clear && php artisan config:cache
+
+# 4. Test endpoint
+# Buka: http://localhost:8000/test-sso-login.html
+```
+
+**✅ Fitur:**
+- ✨ Google OAuth 2.0 authentication
+- 🔐 Verifikasi ID token
+- 👤 Registrasi user otomatis
+- 🎫 JWT token generation (pakai JWT_SECRET yang sama)
+- 🍪 Cookie session_token (sesuai pola frontend)
+- ✉️ Email auto-verification
+- 🛡️ Keamanan comprehensive
+- 📖 Dokumentasi lengkap bahasa Indonesia
+- 🧪 Built-in test page dengan cookie viewer
+
+---
