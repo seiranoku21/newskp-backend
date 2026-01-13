@@ -17,45 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'rbac'])->group(function () {
 
-    // ---INTEGRASI START
 
-    Route::get('portofolio', 'AglobalController@get_portofolio');
-    Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
-    Route::get('aktifitas', 'AglobalController@get_aktifitas');	
-    Route::post('aktifitas/add', 'AktifitasKinerjaController@tambah_aktifitas');	
-    Route::match(['post','put','patch'], 'aktifitas/edit/{rec_id}', 'AktifitasKinerjaController@edit'); 	
-    Route::any('aktifitas/delete/{rec_id}', 'AktifitasKinerjaController@delete');
-
-    Route::get('list_ajuan_skp', 'AglobalController@list_ajuan_skp');
-    Route::post('ajuan_skp/add', 'SkpKontrakController@tambah_ajuan');
-    Route::any('ajuan_skp/delete/{rec_id}', 'SkpKontrakController@delete');
-
-    // ---RHKA 
-    Route::get('kinerja_rhka', 'RencanaHasilKerjaAtasanController@list_rhka');
-    Route::post('kinerja_rhka/add', 'RencanaHasilKerjaAtasanController@tambah_rhka');	
-    Route::any('kinerja_rhka/edit/{rec_id}', 'RencanaHasilKerjaAtasanController@ubah_rhka');	
-    Route::any('kinerja_rhka/delete/{rec_id}', 'RencanaHasilKerjaAtasanController@delete');	
-    
-    // ---RHKI
-    Route::get('kinerja_rhkI', 'RencanaHasilKerjaItemController@list_rhki');
-    Route::post('kinerja_rhki/add', 'RencanaHasilKerjaItemController@tambah_rhki');	
-    Route::any('kinerja_rhki/edit/{rec_id}', 'RencanaHasilKerjaItemController@ubah_rhki');	
-    Route::any('kinerja_rhki/delete/{rec_id}', 'RencanaHasilKerjaItemController@delete');	
-
-    // ---SIMPEG
-    Route::get('spg_pegawai', 'SimpegController@spg_pegawai');
-    Route::get('spg_jabatan', 'SimpegController@spg_jabatan');
-    Route::get('spg_presensi', 'SimpegController@spg_presensi');
-
-    // ---LAPORAN
-    Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');
-    Route::get('lembar_skp', 'LapController@lembar_skp');
-    Route::get('lembar_skp_html', 'LapController@lembar_skp_html');
-    Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf');
-
-
-
-    // ---END INTEGRASI
 
 
 /* routes for LoginSesi Controller  */	
@@ -136,7 +98,45 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 });
 
 // Create a new middleware group that checks for valid tokens
-// Remove the middleware group for api.key
+// Remove the middleware group for api.key 
+
+    // ---INTEGRASI START
+
+    // Route::get('portofolio', 'AglobalController@get_portofolio'); // MOVED OUTSIDE auth:api middleware
+    Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
+    Route::get('aktifitas', 'AglobalController@get_aktifitas');	
+    Route::post('aktifitas/add', 'AktifitasKinerjaController@tambah_aktifitas');	
+    Route::match(['post','put','patch'], 'aktifitas/edit/{rec_id}', 'AktifitasKinerjaController@edit'); 	
+    Route::any('aktifitas/delete/{rec_id}', 'AktifitasKinerjaController@delete');
+
+    Route::get('list_ajuan_skp', 'AglobalController@list_ajuan_skp');
+    Route::post('ajuan_skp/add', 'SkpKontrakController@tambah_ajuan');
+    Route::any('ajuan_skp/delete/{rec_id}', 'SkpKontrakController@delete');
+
+    // ---RHKA 
+    Route::get('kinerja_rhka', 'RencanaHasilKerjaAtasanController@list_rhka');
+    Route::post('kinerja_rhka/add', 'RencanaHasilKerjaAtasanController@tambah_rhka');	
+    Route::any('kinerja_rhka/edit/{rec_id}', 'RencanaHasilKerjaAtasanController@ubah_rhka');	
+    Route::any('kinerja_rhka/delete/{rec_id}', 'RencanaHasilKerjaAtasanController@delete');	
+    
+    // ---RHKI
+    Route::get('kinerja_rhkI', 'RencanaHasilKerjaItemController@list_rhki');
+    Route::post('kinerja_rhki/add', 'RencanaHasilKerjaItemController@tambah_rhki');	
+    Route::any('kinerja_rhki/edit/{rec_id}', 'RencanaHasilKerjaItemController@ubah_rhki');	
+    Route::any('kinerja_rhki/delete/{rec_id}', 'RencanaHasilKerjaItemController@delete');	
+
+    // ---SIMPEG
+    Route::get('spg_pegawai', 'SimpegController@spg_pegawai');
+    Route::get('spg_jabatan', 'SimpegController@spg_jabatan');
+    Route::get('spg_presensi', 'SimpegController@spg_presensi');
+
+    // ---LAPORAN
+    Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');
+    Route::get('lembar_skp', 'LapController@lembar_skp');
+    Route::get('lembar_skp_html', 'LapController@lembar_skp_html');
+    Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf');
+
+    // ---END INTEGRASI
 
     // JWT-protected routes (uses global JWTAuthentication middleware from api group)
     Route::get('account/currentuserdata', 'AccountController@currentuserdata');
@@ -170,8 +170,6 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::any('porto_kinerja/delete/{rec_id}', 'PortofolioKinerjaController@delete');
 
     Route::get('porto_kinerja_cek', 'AglobalController@cek_portofolio');
-
-
 
     // ---Rencana Hasil Kerja Atasan---
     Route::get('rhka/', 'RencanaHasilKerjaAtasanController@index');
