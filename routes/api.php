@@ -102,7 +102,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---INTEGRASI START
 
-    // Route::get('portofolio', 'AglobalController@get_portofolio'); // MOVED OUTSIDE auth:api middleware
+    Route::get('portofolio', 'AglobalController@get_portofolio'); 
     Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
     Route::get('aktifitas', 'AglobalController@get_aktifitas');	
     Route::post('aktifitas/add', 'AktifitasKinerjaController@tambah_aktifitas');	
