@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google SSO Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4285f4;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid #4285f4;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .error-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .google-btn {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .config-section {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #357ae8;
+        }
+        .response-section {
+            margin-top: 20px;
+        }
+        .token-display {
+            word-break: break-all;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google SSO Login Test Page</h1>
+        
+        <div class="info-box">
+            <strong>ℹ️ Information:</strong><br>
+            This page allows you to test the Google SSO authentication endpoint.<br>
+            Make sure you have configured your Google Client ID below.
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong><br>
+            Before testing, ensure:
+            <ul>
+                <li>Backend server is running</li>
+                <li>Google Client ID is configured in <code>.env</code></li>
+                <li>This page URL is added to authorized JavaScript origins in Google Console</li>
+                <li>Database migration has been run</li>
+            </ul>
+        </div>
+
+        <div class="config-section">
+            <h2>Configuration</h2>
+            
+            <label for="clientId">Google Client ID:</label>
+            <input type="text" id="clientId" 
+                   placeholder="123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com"
+                   value="">
+            
+            <label for="apiEndpoint">API Endpoint:</label>
+            <input type="text" id="apiEndpoint" 
+                   placeholder="http://localhost:8000/api/auth/sso"
+                   value="http://localhost:8000/api/auth/sso">
+            
+            <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                <strong>Note:</strong> The Google Client ID should match the one in your backend <code>.env</code> file.
+            </p>
+        </div>
+
+        <div class="google-btn">
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-callback="handleCredentialResponse">
+            </div>
+            <div class="g_id_signin" data-type="standard"></div>
+        </div>
+
+        <div id="manualLogin" style="text-align: center; margin: 20px 0;">
+            <p style="color: #666;">Or click below to initialize Google Sign-In</p>
+            <button onclick="initializeGoogleSignIn()">Initialize Google Sign-In</button>
+        </div>
+
+        <div id="successBox" class="success-box">
+            <strong>✅ Success!</strong><br>
+            <div id="successMessage"></div>
+        </div>
+
+        <div id="errorBox" class="error-box">
+            <strong>❌ Error!</strong><br>
+            <div id="errorMessage"></div>
+        </div>
+
+        <div class="response-section" id="responseSection" style="display: none;">
+            <h2>Response Data</h2>
+            
+            <h3>JWT Token:</h3>
+            <div class="token-display" id="tokenDisplay"></div>
+            
+            <h3>Cookie Information:</h3>
+            <div class="info-box" id="cookieInfo" style="display: none;">
+                <strong>Cookie session_token tersimpan!</strong><br>
+                <div id="cookieDetails" style="margin-top: 10px; font-family: monospace; font-size: 12px;"></div>
+            </div>
+            
+            <h3>User Information:</h3>
+            <pre id="userDisplay"></pre>
+            
+            <h3>Full Response:</h3>
+            <pre id="fullResponse"></pre>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <h2>How to Use</h2>
+            <ol>
+                <li>Enter your Google Client ID in the field above</li>
+                <li>Click "Initialize Google Sign-In" button</li>
+                <li>Click the "Sign in with Google" button that appears</li>
+                <li>Authenticate with your Google account</li>
+                <li>View the response from the backend API</li>
+            </ol>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h2>API Request Example</h2>
+            <pre id="requestExample">
+POST /api/auth/sso
+Content-Type: application/json
+
+{
+  "provider": "google",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjY...",
+  "email": "user@untirta.ac.id",
+  "name": "User Name"
+}
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        function initializeGoogleSignIn() {
+            const clientId = document.getElementById('clientId').value;
+            
+            if (!clientId || clientId.trim() === '') {
+                showError('Please enter your Google Client ID first!');
+                return;
+            }
+
+            // Update the data-client_id attribute
+            document.getElementById('g_id_onload').setAttribute('data-client_id', clientId);
+            
+            // Initialize Google Sign-In
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponse
+            });
+            
+            google.accounts.id.renderButton(
+                document.querySelector('.g_id_signin'),
+                { theme: "outline", size: "large" }
+            );
+
+            showSuccess('Google Sign-In initialized! You can now click the "Sign in with Google" button.');
+        }
+
+        async function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            
+            const apiEndpoint = document.getElementById('apiEndpoint').value;
+            
+            if (!apiEndpoint || apiEndpoint.trim() === '') {
+                showError('Please enter the API endpoint!');
+                return;
+            }
+
+            // Decode JWT to get user info (without verification - just for display)
+            const payload = parseJwt(response.credential);
+            console.log("Decoded payload:", payload);
+
+            try {
+                // Send to backend
+                const backendResponse = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include', // PENTING: untuk menerima cookies dari backend
+                    body: JSON.stringify({
+                        provider: 'google',
+                        id_token: response.credential,
+                        email: payload.email,
+                        name: payload.name
+                    })
+                });
+
+                const data = await backendResponse.json();
+
+                if (backendResponse.ok) {
+                    // Success
+                    showSuccess('Login berhasil! JWT token diterima dan cookie session_token tersimpan.');
+                    displayResponse(data);
+                    
+                    // Cookie session_token sudah otomatis tersimpan oleh browser
+                    console.log('Token:', data.token);
+                    console.log('User info:', data.user);
+                    
+                    // Tampilkan cookie yang tersimpan
+                    setTimeout(() => {
+                        displayCookieInfo();
+                    }, 500);
+                } else {
+                    // Error from backend
+                    showError(`${data.error || 'Unknown error'}: ${data.message || 'No message'}`);
+                    document.getElementById('fullResponse').textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('responseSection').style.display = 'block';
+                }
+            } catch (error) {
+                showError(`Network error: ${error.message}. Make sure the backend server is running.`);
+                console.error('Error:', error);
+            }
+        }
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return {};
+            }
+        }
+
+        function displayResponse(data) {
+            document.getElementById('tokenDisplay').textContent = data.token;
+            document.getElementById('userDisplay').textContent = JSON.stringify(data.user, null, 2);
+            document.getElementById('fullResponse').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('responseSection').style.display = 'block';
+        }
+
+        function displayCookieInfo() {
+            // Cari cookie session_token
+            const cookies = document.cookie.split(';');
+            const sessionToken = cookies.find(c => c.trim().startsWith('session_token='));
+            
+            if (sessionToken) {
+                const token = sessionToken.split('=')[1];
+                const cookieInfo = document.getElementById('cookieInfo');
+                const cookieDetails = document.getElementById('cookieDetails');
+                
+                // Decode token untuk melihat isinya
+                try {
+                    const payload = parseJwt(token);
+                    const expirationDate = new Date(payload.exp * 1000);
+                    
+                    cookieDetails.innerHTML = `
+                        <strong>Cookie Name:</strong> session_token<br>
+                        <strong>Token:</strong> ${token.substring(0, 50)}...<br>
+                        <strong>User ID:</strong> ${payload.data}<br>
+                        <strong>Issued At:</strong> ${new Date(payload.iat * 1000).toLocaleString()}<br>
+                        <strong>Expires At:</strong> ${expirationDate.toLocaleString()}<br>
+                        <strong>Valid For:</strong> ${Math.round((expirationDate - new Date()) / 60000)} minutes
+                    `;
+                    
+                    cookieInfo.style.display = 'block';
+                } catch (e) {
+                    cookieDetails.innerHTML = `
+                        <strong>Cookie Name:</strong> session_token<br>
+                        <strong>Token:</strong> ${token.substring(0, 50)}...<br>
+                        <em>Token payload tidak bisa di-decode</em>
+                    `;
+                    cookieInfo.style.display = 'block';
+                }
+            } else {
+                console.warn('Cookie session_token tidak ditemukan');
+            }
+        }
+
+        function showSuccess(message) {
+            const successBox = document.getElementById('successBox');
+            const errorBox = document.getElementById('errorBox');
+            
+            successBox.style.display = 'block';
+            errorBox.style.display = 'none';
+            
+            document.getElementById('successMessage').textContent = message;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                successBox.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            const successBox = document.getElementById('successBox');
+            const errorBox = document.getElementById('errorBox');
+            
+            successBox.style.display = 'none';
+            errorBox.style.display = 'block';
+            
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Load saved values from localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedClientId = localStorage.getItem('googleClientId');
+            const savedEndpoint = localStorage.getItem('apiEndpoint');
+            
+            if (savedClientId) {
+                document.getElementById('clientId').value = savedClientId;
+            }
+            
+            if (savedEndpoint) {
+                document.getElementById('apiEndpoint').value = savedEndpoint;
+            }
+            
+            // Save values when they change
+            document.getElementById('clientId').addEventListener('change', (e) => {
+                localStorage.setItem('googleClientId', e.target.value);
+            });
+            
+            document.getElementById('apiEndpoint').addEventListener('change', (e) => {
+                localStorage.setItem('apiEndpoint', e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
+
