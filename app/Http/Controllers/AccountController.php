@@ -60,16 +60,27 @@ class AccountController extends Controller{
 			$userRoleName = $user->getRoleNames();
 			$rolesMenu = $user->getRolesMenu();
 
+			$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
+			$id_pegawai = $pegawai->id_pegawai;
+			$nip = $pegawai->nip;
+			$nama_gelar = $pegawai->nama_gelar;
+			$jabatan_struktural = $pegawai->jabatan_struktural;
+			$jabatan_fungsional = $pegawai->jabatan_fungsional;
+			$unit_kerja = $pegawai->nm_unit;
+
 			// Prepare user data with photo
 			$userData = [
 				"id" => $user->user_id,
+				"id_pegawai" => $id_pegawai ?? null,
 				"username" => $user->username,
 				"email" => $user->email,
 				"name" => $user->name_info,
 				"picture" => $user->photo,
-				"nip" => $user->nip ?? null,
-				"jabatan" => $user->jabatan ?? null,
-				"unit_kerja" => $user->unit_kerja ?? null,
+				"nip" => $nip ?? null,
+				"nama_gelar" => $nama_gelar ?? null,
+				"jabatan_struktural" => $jabatan_struktural ?? null,
+				"jabatan_fungsional" => $jabatan_fungsional ?? null,
+				"unit_kerja" => $unit_kerja ?? null,
 				"user_role_id" => $user->user_role_id,
 			];
 
