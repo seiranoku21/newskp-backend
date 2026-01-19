@@ -59,6 +59,7 @@ class AccountController extends Controller{
 			$userPages = $user->getUserPages();
 			$userRoleName = $user->getRoleNames();
 			$rolesMenu = $user->getRolesMenu();
+			$portofolio_list = DB::table('portofolio_kinerja')->where('nip', $user->nip)->get();
 
 			$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
 			$id_pegawai = $pegawai->id_pegawai;
@@ -82,12 +83,14 @@ class AccountController extends Controller{
 				"jabatan_fungsional" => $jabatan_fungsional ?? null,
 				"unit_kerja" => $unit_kerja ?? null,
 				"user_role_id" => $user->user_role_id,
+				"portofolio_list" => $portofolio_list ?? null,
 			];
 
 			$data = array_merge($userData, [
-				"pages" => $userPages,
+				
 				"roles" => $userRoleName,
-				"roles_menu" => $rolesMenu
+				"roles_menu" => $rolesMenu,
+				"pages" => $userPages,
 			]);
 		
 		return $this->respond($data);
