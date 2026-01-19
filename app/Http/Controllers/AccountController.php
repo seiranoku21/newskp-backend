@@ -59,18 +59,19 @@ class AccountController extends Controller{
 			$userPages = $user->getUserPages();
 			$userRoleName = $user->getRoleNames();
 			$rolesMenu = $user->getRolesMenu();
-			$portofolio_list = DB::table('portofolio_kinerja')
-			->select('uid', 'nip', 'email', 'nama')
-			->where('nip', $user->nip)
-			->get();
+		$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
+		$id_pegawai = $pegawai->id_pegawai;
+		$nip = $pegawai->nip;
+		$nama_gelar = $pegawai->nama_gelar;
+		$jabatan_struktural = $pegawai->jabatan_struktural;
+		$jabatan_fungsional = $pegawai->jabatan_fungsional;
+		$unit_kerja = $pegawai->nm_unit;
 
-			$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
-			$id_pegawai = $pegawai->id_pegawai;
-			$nip = $pegawai->nip;
-			$nama_gelar = $pegawai->nama_gelar;
-			$jabatan_struktural = $pegawai->jabatan_struktural;
-			$jabatan_fungsional = $pegawai->jabatan_fungsional;
-			$unit_kerja = $pegawai->nm_unit;
+		// Get portofolio list using NIP from pegawai table
+		$portofolio_list = DB::table('portofolio_kinerja')
+			->select('uid', 'nip', 'email', 'nama')
+			->where('nip', $nip)
+			->get();
 
 			// Prepare user data with photo
 			$userData = [
