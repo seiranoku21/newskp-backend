@@ -59,7 +59,10 @@ class AccountController extends Controller{
 			$userPages = $user->getUserPages();
 			$userRoleName = $user->getRoleNames();
 			$rolesMenu = $user->getRolesMenu();
-			$portofolio_list = DB::table('portofolio_kinerja')->where('nip', $user->nip)->get();
+			$portofolio_list = DB::table('portofolio_kinerja')
+			->select('uid', 'nip', 'email', 'nama')
+			->where('nip', $user->nip)
+			->get();
 
 			$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
 			$id_pegawai = $pegawai->id_pegawai;
