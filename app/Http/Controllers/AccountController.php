@@ -54,11 +54,12 @@ class AccountController extends Controller{
 	// Akses Halaman Jika Login Local
 	function currentuserdata(Request $request){
 
-			// For local login
-			$user = auth()->user();
-			$userPages = $user->getUserPages();
-			$userRoleName = $user->getRoleNames();
-			$rolesMenu = $user->getRolesMenu();
+		// For local login
+		$user = auth()->user();
+		$userPages = $user->getUserPages();
+		$userRoleName = $user->getRoleNames();
+		$rolesMenu = $user->getRolesMenu();
+
 		$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
 		$id_pegawai = $pegawai->id_pegawai;
 		$nip = $pegawai->nip;
@@ -69,7 +70,7 @@ class AccountController extends Controller{
 
 		// Get portofolio list using NIP from pegawai table
 		$portofolio_list = DB::table('portofolio_kinerja')
-			->select('uid', 'nip', 'email', 'nama')
+			->select('id', 'uid', DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'nip', 'email', 'nama','tahun')
 			->where('nip', $nip)
 			->get();
 
