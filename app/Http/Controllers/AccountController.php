@@ -61,42 +61,55 @@ class AccountController extends Controller{
 		$rolesMenu = $user->getRolesMenu();
 
 		$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
-		$id_pegawai = $pegawai->id_pegawai;
-		$nip = $pegawai->nip;
-		$nama_gelar = $pegawai->nama_gelar;
-		$jabatan_struktural = $pegawai->jabatan_struktural;
-		$jabatan_fungsional = $pegawai->jabatan_fungsional;
-		$unit_kerja = $pegawai->nm_unit;
+		
+		// Initialize variables with null defaults
+		$id_pegawai = null;
+		$nip = null;
+		$nama_gelar = null;
+		$jabatan_struktural = null;
+		$jabatan_fungsional = null;
+		$unit_kerja = null;
+		$portofolio_list = null;
 
-		// Get portofolio list using NIP from pegawai table
-		$portofolio_list = DB::table('portofolio_kinerja')
-			->select('id', 'uid', DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'nip', 'email', 'nama','tahun')
-			->where('nip', $nip)
-			->get();
+		// Only extract data if pegawai record exists
+		if ($pegawai) {
+			$id_pegawai = $pegawai->id_pegawai;
+			$nip = $pegawai->nip;
+			$nama_gelar = $pegawai->nama_gelar;
+			$jabatan_struktural = $pegawai->jabatan_struktural;
+			$jabatan_fungsional = $pegawai->jabatan_fungsional;
+			$unit_kerja = $pegawai->nm_unit;
 
-			// Prepare user data with photo
-			$userData = [
-				"id" => $user->user_id,
-				"id_pegawai" => $id_pegawai ?? null,
-				"username" => $user->username,
-				"email" => $user->email,
-				"name" => $user->name_info,
-				"picture" => $user->photo,
-				"nip" => $nip ?? null,
-				"nama_gelar" => $nama_gelar ?? null,
-				"jabatan_struktural" => $jabatan_struktural ?? null,
-				"jabatan_fungsional" => $jabatan_fungsional ?? null,
-				"unit_kerja" => $unit_kerja ?? null,
-				"user_role_id" => $user->user_role_id,
-				"portofolio_list" => $portofolio_list ?? null,
-			];
+			// Get portofolio list using NIP from pegawai table
+			$portofolio_list = DB::table('portofolio_kinerja')
+				->select('id', 'uid', DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'nip', 'email', 'nama','tahun')
+				->where('nip', $nip)
+				->get();
+		}
 
-			$data = array_merge($userData, [
-				
-				"roles" => $userRoleName,
-				"roles_menu" => $rolesMenu,
-				"pages" => $userPages,
-			]);
+		// Prepare user data with photo
+		$userData = [
+			"id" => $user->user_id,
+			"id_pegawai" => $id_pegawai,
+			"username" => $user->username,
+			"email" => $user->email,
+			"name" => $user->name_info,
+			"picture" => $user->photo,
+			"nip" => $nip,
+			"nama_gelar" => $nama_gelar,
+			"jabatan_struktural" => $jabatan_struktural,
+			"jabatan_fungsional" => $jabatan_fungsional,
+			"unit_kerja" => $unit_kerja,
+			"user_role_id" => $user->user_role_id,
+			"portofolio_list" => $portofolio_list,
+		];
+
+		$data = array_merge($userData, [
+			
+			"roles" => $userRoleName,
+			"roles_menu" => $rolesMenu,
+			"pages" => $userPages,
+		]);
 		
 		return $this->respond($data);
 	}
