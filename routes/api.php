@@ -249,6 +249,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
 // Keep authentication routes outside the middleware
 Route::post('auth/login', 'AuthController@login');
+Route::post('auth/logout', 'AuthController@logout'); // Logout endpoint
 Route::post('auth/sso', 'AuthController@sso'); // New Google SSO endpoint
 Route::post('auth/sso-test', 'AuthController@ssoTest'); // SSO testing endpoint (development only)
 Route::post('auth/sso_login', 'AuthController@sso_login');

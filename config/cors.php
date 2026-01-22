@@ -17,18 +17,41 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => ['*'],
+    // ⚠️ SECURITY: Hanya izinkan domain yang spesifik
+    // Jangan gunakan '*' karena tidak kompatibel dengan credentials
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL'),                    // URL frontend dari .env
+        'https://skpv2.untirta.ac.id',         // Production frontend
+        env('APP_ENV') === 'local' ? 'http://localhost:3000' : null,  // Dev only
+        env('APP_ENV') === 'local' ? 'http://127.0.0.1:3000' : null,  // Dev only
+    ]),
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    // Hanya izinkan headers yang diperlukan (lebih secure daripada '*')
+    'allowed_headers' => [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'X-CSRF-TOKEN',
+    ],
 
-    'exposed_headers' => [],
+    // Expose headers yang diperlukan untuk frontend
+    'exposed_headers' => [
+        'Authorization',
+        'X-Total-Count',
+    ],
 
-    'max_age' => 0,
+    // Cache preflight request selama 1 jam (3600 detik)
+    // Mengurangi jumlah OPTIONS request
+    'max_age' => 3600,
 
-    'supports_credentials' => false,
+    // ⚠️ CRITICAL: HARUS TRUE untuk cookies (httpOnly cookies)
+    // Tanpa ini, cookie access_token tidak akan dikirim/diterima
+    'supports_credentials' => true,
 
 ];

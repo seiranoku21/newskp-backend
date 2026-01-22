@@ -237,6 +237,69 @@ class AuthController extends Controller{
 	}
 
 	/**
+	 * Logout - Clear all authentication cookies
+	 * Endpoint: POST /api/auth/logout
+	 * 
+	 * @param Request $request
+	 * @return \Illuminate\Http\JsonResponse
+	 */
+	function logout(Request $request) {
+		try {
+			// Clear access_token cookie
+			$accessTokenCookie = cookie(
+				'access_token',
+				'',
+				-1, // Expired
+				'/',
+				null,
+				false,
+				true,
+				false,
+				'lax'
+			);
+
+			// Clear newskp_session cookie if exists
+			$sessionCookie = cookie(
+				'newskp_session',
+				'',
+				-1,
+				'/',
+				null,
+				false,
+				true,
+				false,
+				'lax'
+			);
+
+			// Clear XSRF-TOKEN cookie if exists
+			$xsrfCookie = cookie(
+				'XSRF-TOKEN',
+				'',
+				-1,
+				'/',
+				null,
+				false,
+				false,
+				false,
+				'lax'
+			);
+
+			return response()->json([
+				'message' => 'Logged out successfully'
+			], 200)
+				->cookie($accessTokenCookie)
+				->cookie($sessionCookie)
+				->cookie($xsrfCookie);
+
+		} catch (Exception $e) {
+			return response()->json([
+				'error' => 'Logout failed',
+				'message' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
 	 * SSO Login untuk Testing (DEVELOPMENT ONLY!)
 	 * Endpoint: POST /api/auth/sso-test
 	 * 
