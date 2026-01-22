@@ -31,7 +31,32 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 
         // X-Frame-Options: Prevent clickjacking
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        // Allow PDF files to be embedded in iframe from frontend
+        $isPdfRequest = str_contains($request->path(), '/uploads/files/dokumen') || 
+                       str_ends_with($request->path(), '.pdf');
+        
+        if ($isPdfRequest) {
+            // Allow PDF to be embedded from specific origins
+            $allowedOrigins = [
+                'http://localhost:3000',
+                'https://skpv2.untirta.ac.id',
+            ];
+            $origin = $request->header('Origin');
+            
+            if (in_array($origin, $allowedOrigins)) {
+                // Remove X-Frame-Options to allow embedding
+                $response->headers->remove('X-Frame-Options');
+                // Set CORS headers for PDF
+                $response->headers->set('Access-Control-Allow-Origin', $origin);
+                $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            } else {
+                // Default: same origin only
+                $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+            }
+        } else {
+            // For non-PDF requests, use SAMEORIGIN
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        }
 
         // X-XSS-Protection: Enable XSS filter (legacy browsers)
         $response->headers->set('X-XSS-Protection', '1; mode=block');
