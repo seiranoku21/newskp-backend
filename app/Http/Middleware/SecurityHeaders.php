@@ -23,38 +23,51 @@ class SecurityHeaders
      * @param  \Closure  $next
      * @return mixed
      */
+    /**
+     * Get allowed origins for CORS
+     */
+    protected function getAllowedOrigins(): array
+    {
+        $origins = [
+            'https://skpv2.untirta.ac.id',
+        ];
+
+        // Development: allow localhost
+        if (env('APP_ENV') === 'local' || env('APP_ENV') === 'development') {
+            $origins[] = 'http://localhost:3000';
+            $origins[] = 'http://127.0.0.1:3000';
+            $origins[] = 'http://localhost:3001';
+        }
+
+        // Add frontend URL from .env if exists
+        if ($frontendUrl = env('FRONTEND_URL')) {
+            $origins[] = $frontendUrl;
+        }
+
+        return array_unique($origins);
+    }
+
     public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
+        $origin = $request->header('Origin');
+        $allowedOrigins = $this->getAllowedOrigins();
+        $isAllowedOrigin = in_array($origin, $allowedOrigins);
 
         // X-Content-Type-Options: Prevent MIME type sniffing
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 
-        // X-Frame-Options: Prevent clickjacking
-        // Allow PDF files to be embedded in iframe from frontend
+        // Detect if this is a PDF or file request
         $isPdfRequest = str_contains($request->path(), '/uploads/files/dokumen') || 
+                       str_contains($request->path(), '/uploads/files/') ||
                        str_ends_with($request->path(), '.pdf');
         
-        if ($isPdfRequest) {
-            // Allow PDF to be embedded from specific origins
-            $allowedOrigins = [
-                'http://localhost:3000',
-                'https://skpv2.untirta.ac.id',
-            ];
-            $origin = $request->header('Origin');
-            
-            if (in_array($origin, $allowedOrigins)) {
-                // Remove X-Frame-Options to allow embedding
-                $response->headers->remove('X-Frame-Options');
-                // Set CORS headers for PDF
-                $response->headers->set('Access-Control-Allow-Origin', $origin);
-                $response->headers->set('Access-Control-Allow-Credentials', 'true');
-            } else {
-                // Default: same origin only
-                $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-            }
+        // X-Frame-Options: Prevent clickjacking
+        if ($isPdfRequest && $isAllowedOrigin) {
+            // Remove X-Frame-Options to allow PDF embedding from allowed origins
+            $response->headers->remove('X-Frame-Options');
         } else {
-            // For non-PDF requests, use SAMEORIGIN
+            // For non-PDF or non-allowed origins, use SAMEORIGIN
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         }
 

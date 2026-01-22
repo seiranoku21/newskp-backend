@@ -13,6 +13,17 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+// ============================================================================
+// PUBLIC ROUTES - File Serving with CORS
+// ============================================================================
+// Serve files (PDF, images, etc) with proper CORS headers for iframe embedding
+Route::get('uploads/files/{path}', 'FileController@serve')->where('path', '.*');
+Route::options('uploads/files/{path}', 'FileController@options')->where('path', '.*');
+
+// ============================================================================
+// PROTECTED ROUTES - Require Authentication
+// ============================================================================
 // api routes that need auth
 
 Route::middleware(['auth:api', 'rbac'])->group(function () {
