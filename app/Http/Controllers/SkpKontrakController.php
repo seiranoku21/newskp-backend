@@ -54,7 +54,16 @@ class SkpKontrakController extends Controller
 	function edit(SkpKontrakEditRequest $request, $rec_id = null){
 		$query = SkpKontrak::query();
 		$record = $query->findOrFail($rec_id, SkpKontrak::editFields());
+		
 		if ($request->isMethod('post')) {
+			// Cek apakah ajuan SKP sudah dinilai (poin > 0)
+			if ($record->poin > 0) {
+				return response()->json([
+					'success' => false,
+					'message' => "Ajuan SKP ini tidak dapat diubah karena sudah mendapat penilaian (Poin: {$record->poin})"
+				], 403);
+			}
+			
 			$modeldata = $request->validated();
 			$record->update($modeldata);
 		}
@@ -63,6 +72,21 @@ class SkpKontrakController extends Controller
 
 	function delete(Request $request, $rec_id = null){
 		$arr_id = explode(",", $rec_id);
+		
+		// Cek apakah ada ajuan SKP yang sudah dinilai (poin > 0)
+		$recordsWithPoin = SkpKontrak::whereIn("id", $arr_id)
+			->where('poin', '>', 0)
+			->get();
+			
+		if ($recordsWithPoin->count() > 0) {
+			$poinList = $recordsWithPoin->pluck('poin')->join(', ');
+			return response()->json([
+				'success' => false,
+				'message' => "Tidak dapat menghapus ajuan SKP yang sudah dinilai (Poin: {$poinList})"
+			], 403);
+		}
+		
+		// Jika lolos validasi, hapus record
 		$query = SkpKontrak::query();
 		$query->whereIn("id", $arr_id);
 		$query->delete();
