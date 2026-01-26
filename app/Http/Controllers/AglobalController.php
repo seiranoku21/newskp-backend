@@ -1114,6 +1114,9 @@ class AglobalController extends Controller
     function list_ajuan_skp(Request $request){
         $nip = $request->nip;
         $tahun = $request->tahun;
+        $perPage = $request->input('per_page', 5); // default 5
+        $page = $request->input('page', 1);
+        
         $rate_sts = [
             'AE' => 'DIATAS EKPEKTASI',
             'SE' => 'SESUAI EKPEKTASI',
@@ -1164,9 +1167,23 @@ class AglobalController extends Controller
             $query->where('tahun', $tahun);
         }
         
-        $data = $query->get();
+        $jml_data = $query->count();
+        
+        // Pagination
+        $data = $query->forPage($page, $perPage)->get();
 
-        return $data;
+        return response()->json([
+            'success' => true,
+            'message' => 'sukses',
+            'jml_data' => $jml_data,
+            'data' => $data,
+            'pagination' => [
+                'current_page' => (int)$page,
+                'per_page' => (int)$perPage,
+                'total' => $jml_data,
+                'last_page' => ceil($jml_data / $perPage),
+            ]
+        ]);
     }
 
     // ---REFERENSI START--
