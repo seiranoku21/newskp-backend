@@ -1113,12 +1113,13 @@ class AglobalController extends Controller
 
     function list_ajuan_skp(Request $request){
         $nip = $request->nip;
+        $tahun = $request->tahun;
         $rate_sts = [
             'AE' => 'DIATAS EKPEKTASI',
             'SE' => 'SESUAI EKPEKTASI',
             'BE' => 'DIBAWAH EKPEKTASI'
         ];
-        $data = DB::table('skp_kontrak as a')
+        $query = DB::table('skp_kontrak as a')
                 ->join('ref_skp_tipe as b', 'b.id','=','a.skp_tipe_id')
                 ->join('ref_periode as c', 'c.id','=','a.periode_id')
                 ->join('ref_status as d', 'd.id','=','a.status_id' )
@@ -1156,8 +1157,14 @@ class AglobalController extends Controller
                     'a.poin',
                     'a.bobot_persen'
                 )
-                ->where('pegawai_nip', $nip)
-                ->get();
+                ->where('pegawai_nip', $nip);
+        
+        // Filter berdasarkan tahun jika parameter tahun ada
+        if ($tahun) {
+            $query->where('tahun', $tahun);
+        }
+        
+        $data = $query->get();
 
         return $data;
     }
