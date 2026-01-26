@@ -95,12 +95,23 @@ class AktifitasKinerjaController extends Controller
         $record = $query->findOrFail($rec_id, AktifitasKinerja::editFields());
         
         if ($request->isMethod('post') || $request->isMethod('put') || $request->isMethod('patch')) {
-            // Cek apakah aktifitas sudah dinilai (poin > 0)
-            if ($record->poin > 0) {
+            // Cek apakah ini request untuk update (bukan hanya fetch data)
+            // Request fetch data hanya memiliki 'nip', sedangkan update memiliki field lain
+            $isUpdateRequest = $request->has('tanggal_mulai') || $request->has('tanggal_selesai') || 
+                               $request->has('jumlah') || $request->has('satuan') ||
+                               $request->hasFile('gambar') || $request->hasFile('dokumen');
+            
+            // Cek apakah aktifitas sudah dinilai (poin > 0) hanya untuk request update
+            if ($isUpdateRequest && $record->poin > 0) {
                 return response()->json([
                     'success' => false,
                     'message' => "Aktifitas ini tidak dapat diubah karena sudah mendapat penilaian (Poin: {$record->poin})"
                 ], 403);
+            }
+            
+            // Jika bukan update request, langsung return data
+            if (!$isUpdateRequest) {
+                return $this->respond($record);
             }
             
             $modeldata = $request->validated();
