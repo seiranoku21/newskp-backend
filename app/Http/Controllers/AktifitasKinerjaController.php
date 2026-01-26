@@ -93,7 +93,16 @@ class AktifitasKinerjaController extends Controller
     function edit(AktifitasKinerjaEditRequest $request, $rec_id = null){
         $query = AktifitasKinerja::query();
         $record = $query->findOrFail($rec_id, AktifitasKinerja::editFields());
+        
         if ($request->isMethod('post') || $request->isMethod('put') || $request->isMethod('patch')) {
+            // Cek apakah aktifitas sudah dinilai (poin > 0)
+            if ($record->poin > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Aktifitas ini tidak dapat diubah karena sudah mendapat penilaian (Poin: {$record->poin})"
+                ], 403);
+            }
+            
             $modeldata = $request->validated();
 
             // Support direct multipart file uploads for PUT/PATCH/POST
@@ -166,6 +175,21 @@ class AktifitasKinerjaController extends Controller
      */
 	function delete(Request $request, $rec_id = null){
 		$arr_id = explode(",", $rec_id);
+		
+		// Cek apakah ada aktifitas yang sudah dinilai (poin > 0)
+		$recordsWithPoin = AktifitasKinerja::whereIn("id", $arr_id)
+			->where('poin', '>', 0)
+			->get();
+			
+		if ($recordsWithPoin->count() > 0) {
+			$poinList = $recordsWithPoin->pluck('poin')->join(', ');
+			return response()->json([
+				'success' => false,
+				'message' => "Tidak dapat menghapus aktifitas yang sudah dinilai (Poin: {$poinList})"
+			], 403);
+		}
+		
+		// Jika lolos validasi, hapus record
 		$query = AktifitasKinerja::query();
 		$query->whereIn("id", $arr_id);
 		$query->delete();
