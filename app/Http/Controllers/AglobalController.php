@@ -125,7 +125,7 @@ class AglobalController extends Controller
                 'id',
                 'uid',
                 'tahun',
-                DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),
+                DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan,' (',status_kerja,'-',level_pegawai,')') as no_poki"),
                 DB::raw("CONCAT(id, '-', SUBSTRING(uid, 1, 4)) as no_portofolio"),
                 'no_sk',
                 'nip',
