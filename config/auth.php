@@ -131,36 +131,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Jwt secret key
+    | JWT Configuration
     |--------------------------------------------------------------------------
     |
-    | Secret key used to generate JWt token
+    | JWT secret key, algorithm, and token validity duration
+    | - jwt_secret: Secret key used to generate JWT token
+    | - jwt_algorithm: Algorithm used to sign the token (default: HS256)
+    | - jwt_duration: Token validity duration in minutes (default: 2 hours)
     |
     */
     'jwt_secret' => env('JWT_SECRET', ''),
     'jwt_algorithm' => env('JWT_ALGORITHM', 'HS256'),
-    'jwt_duration' => env('JWT_DURATION', 30), // dalam menit
-
-    /*
-    |--------------------------------------------------------------------------
-    | Jwt algorithm
-    |--------------------------------------------------------------------------
-    |
-    | Algorithm used to sign the token
-    |
-    */
-    'jwt_algorithm' => env('JWT_ALGORITHM', 'HS256'),
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | JWT validaty duration in minutes
-    |--------------------------------------------------------------------------
-    |
-    | Here you may define the amount of minutes before a jwt token times out
-    |
-    */
-
-    'jwt_duration' => env('JWT_DURATION', 30),
+    'jwt_duration' => env('JWT_DURATION', 120), // dalam menit (default: 2 jam)
 
 ];
