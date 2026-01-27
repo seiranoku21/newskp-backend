@@ -117,6 +117,7 @@ class AglobalController extends Controller
     public function get_portofolio(Request $request){
         $nip = $request->nip;
         $uid = $request->uid;
+        $email = $request->email;   
 
         // Ambil data portofolio_kinerja
         $query = DB::table('portofolio_kinerja')
@@ -150,6 +151,9 @@ class AglobalController extends Controller
         }
         if (!empty($uid)) {
             $query->where('uid', $uid);
+        }
+        if (!empty($email)) {
+            $query->where('email', $email);
         }
 
         $portofolios = $query->get();
