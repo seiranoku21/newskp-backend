@@ -1116,6 +1116,7 @@ class AglobalController extends Controller
     // ---AJUAN SKP START---
 
     function list_ajuan_skp(Request $request){
+        $email = $request->email;
         $nip = $request->nip;
         $tahun = $request->tahun;
         $perPage = $request->input('per_page', 5); // default 5
@@ -1163,13 +1164,20 @@ class AglobalController extends Controller
                     'a.predikat_kinerja',
                     'a.poin',
                     'a.bobot_persen'
-                )
-                ->where('pegawai_nip', $nip);
+                );
+              
         
         // Filter berdasarkan tahun jika parameter tahun ada
         if ($tahun) {
             $query->where('tahun', $tahun);
         }
+        if ($email) {
+            $query->where('pegawai_email', $email);
+        }
+        if ($nip) {
+            $query->where('pegawai_nip', $nip);
+        }
+
         
         $jml_data = $query->count();
         

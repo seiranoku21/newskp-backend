@@ -130,29 +130,31 @@ class LapController extends Controller
         // Kelompokkan perilaku kerja berdasarkan kategori utama
         $perilaku_kerja_grouped = [];
         
-        // Ambil semua parent (yang tidak memiliki parent)
-        $parents = $ref_perilaku_kerja_all->whereNull('parent');
-        
-        foreach ($parents as $parent) {
-            $parent_kode = $parent->kode;
+        // Filter parent (kode integer: 1, 2, 3, dst) dan child (kode decimal: 1.1, 1.2, 1.3, dst)
+        foreach ($ref_perilaku_kerja_all as $item) {
+            $kode = $item->kode;
             
-            // Buat struktur parent
-            $perilaku_kerja_grouped[$parent_kode] = [
-                'no' => $parent_kode,
-                'kode' => $parent_kode,
-                'perilaku_kerja' => $parent->perilaku_kerja,
-                'ekspektasi_pimpinan' => $ekspektasi_map[$parent_kode] ?? '',
-                'items' => []
-            ];
-            
-            // Ambil semua children dari parent ini
-            $children = $ref_perilaku_kerja_all->where('parent', $parent_kode);
-            
-            foreach ($children as $child) {
-                $perilaku_kerja_grouped[$parent_kode]['items'][] = [
-                    'kode' => $child->kode,
-                    'perilaku_kerja' => $child->perilaku_kerja,
+            // Jika kode adalah integer (1, 2, 3, dst), ini adalah parent
+            if (strpos($kode, '.') === false) {
+                $perilaku_kerja_grouped[$kode] = [
+                    'no' => $kode,
+                    'kode' => $kode,
+                    'perilaku_kerja' => $item->perilaku_kerja,
+                    'ekspektasi_pimpinan' => $ekspektasi_map[$kode] ?? '',
+                    'items' => []
                 ];
+            } else {
+                // Jika kode adalah decimal (1.1, 1.2, dst), ini adalah child
+                // Ambil parent kode (bagian sebelum titik)
+                $parent_kode = explode('.', $kode)[0];
+                
+                // Tambahkan sebagai child dari parent
+                if (isset($perilaku_kerja_grouped[$parent_kode])) {
+                    $perilaku_kerja_grouped[$parent_kode]['items'][] = [
+                        'kode' => $kode,
+                        'perilaku_kerja' => $item->perilaku_kerja,
+                    ];
+                }
             }
         }
         
@@ -200,7 +202,7 @@ class LapController extends Controller
         $skp_tipe_deskripsi = $skp_tipe->deskripsi;
         $skp_tipe_nama = $skp_tipe->skp_tipe;
         // ---Header
-        $logo = "https://skpv2.untirta.ac.id/images/favicon.png";
+        $logo = "https://cdn.jsdelivr.net/gh/seiranoku/ukonstyles@main/images/favicon.png";
         $institusi = "UNIVERSITAS SULTAN AGENG TIRTAYASA";
         $judul_1 = ($tipe == 1) ? "SASARAN KINERJA PEGAWAI" : "EVALUASI KINERJA PEGAWAI";
         $judul_2 = "PENDEKATAN HASIL KERJA " . $skp_tipe_nama;
@@ -296,34 +298,39 @@ class LapController extends Controller
         // Kelompokkan perilaku kerja berdasarkan kategori utama
         $perilaku_kerja_grouped = [];
         
-        // Ambil semua parent (yang tidak memiliki parent)
-        $parents = $ref_perilaku_kerja_all->whereNull('parent');
-        
-        foreach ($parents as $parent) {
-            $parent_kode = $parent->kode;
+        // Filter parent (kode integer: 1, 2, 3, dst) dan child (kode decimal: 1.1, 1.2, 1.3, dst)
+        foreach ($ref_perilaku_kerja_all as $item) {
+            $kode = $item->kode;
             
-            // Buat struktur parent
-            $perilaku_kerja_grouped[$parent_kode] = [
-                'no' => $parent_kode,
-                'kode' => $parent_kode,
-                'perilaku_kerja' => $parent->perilaku_kerja,
-                'ekspektasi_pimpinan' => $ekspektasi_map[$parent_kode] ?? '',
-                'items' => []
-            ];
-            
-            // Ambil semua children dari parent ini
-            $children = $ref_perilaku_kerja_all->where('parent', $parent_kode);
-            
-            foreach ($children as $child) {
-                $perilaku_kerja_grouped[$parent_kode]['items'][] = [
-                    'kode' => $child->kode,
-                    'perilaku_kerja' => $child->perilaku_kerja,
+            // Jika kode adalah integer (1, 2, 3, dst), ini adalah parent
+            if (strpos($kode, '.') === false) {
+                $perilaku_kerja_grouped[$kode] = [
+                    'no' => $kode,
+                    'kode' => $kode,
+                    'perilaku_kerja' => $item->perilaku_kerja,
+                    'ekspektasi_pimpinan' => $ekspektasi_map[$kode] ?? '',
+                    'items' => []
                 ];
+            } else {
+                // Jika kode adalah decimal (1.1, 1.2, dst), ini adalah child
+                // Ambil parent kode (bagian sebelum titik)
+                $parent_kode = explode('.', $kode)[0];
+                
+                // Tambahkan sebagai child dari parent
+                if (isset($perilaku_kerja_grouped[$parent_kode])) {
+                    $perilaku_kerja_grouped[$parent_kode]['items'][] = [
+                        'kode' => $kode,
+                        'perilaku_kerja' => $item->perilaku_kerja,
+                    ];
+                }
             }
         }
         
         // Convert to indexed array
         $perilaku_kerja = array_values($perilaku_kerja_grouped);
+        
+        // Debug: Log struktur perilaku_kerja
+        \Log::info('Perilaku Kerja Structure for HTML (FIXED):', ['count' => count($perilaku_kerja), 'first_item' => isset($perilaku_kerja[0]) ? $perilaku_kerja[0] : null]);
 
         // --Rating perilaku kerja
         $rating_perilaku_kerja = RefHasilKerja::where('kode', $skp_kontrak->rating_perilaku_kerja)->first()->hasil_kerja;
@@ -334,150 +341,93 @@ class LapController extends Controller
         // ---Respon HTML
         if($skp_kontrak){
             $html = '
-            <!DOCTYPE html>
-            <html lang="id">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Lembar SKP - ' . $pegawai['nama'] . '</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        margin: 20px;
-                        font-size: 12px;
-                    }
-                    .header {
-                        text-align: center;
-                        margin-bottom: 20px;
-                    }
-                    .header h2 {
-                        margin: 5px 0;
-                    }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-bottom: 20px;
-                    }
-                    table, th, td {
-                        border: 1px solid #000;
-                    }
-                    th, td {
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #f0f0f0;
-                        font-weight: bold;
-                    }
-                    .text-center {
-                        text-align: center;
-                    }
-                    .text-right {
-                        text-align: right;
-                    }
-                    .bg-gray {
-                        background-color: #e0e0e0;
-                    }
-                    .section-title {
-                        background-color: #d0d0d0;
-                        font-weight: bold;
-                        text-align: center;
-                    }
-                    .no-border {
-                        border: none;
-                    }
-                    .info-table td {
-                        border: none;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <img src="' . $header['logo'] . '" alt="Logo Untirta" style="width: 100px; height: auto; margin-bottom: 10px;">
-                    <h2>' . $header['institusi'] . '</h2>
-                    <h3>' . $header['judul_1'] . '</h3>
-                    <h3>' . $header['judul_2'] . '</h3>
+            <div style="font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 0;">
+                <div style="text-align: center; margin-bottom: 20px; padding: 0;">
+                    <img src="' . $header['logo'] . '" alt="Logo Untirta" style="width: 100px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
+                    <div style="margin: 5px 0; font-size: 16px; font-weight: bold;">' . $header['institusi'] . '</div>
+                    <div style="margin: 5px 0; font-size: 14px; font-weight: bold;">' . $header['judul_1'] . '</div>
+                    <div style="margin: 5px 0; font-size: 14px; font-weight: bold;">' . $header['judul_2'] . '</div>
                 </div>
 
-                <!-- Informasi Periode -->
-                <table class="info-table">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: none;">
                     <tr>
-                        <td width="30%"><strong>Periode Penilaian</strong></td>
-                        <td>: ' . $periode['tgl_penilaian_indo'] . '</td>
+                        <td style="width: 30%; padding: 8px; text-align: left; border: none;"><strong>Periode Penilaian</strong></td>
+                        <td style="padding: 8px; text-align: left; border: none;">: ' . $periode['tgl_penilaian_indo'] . '</td>
                     </tr>
                 </table>
 
-                <!-- Informasi Pegawai yang Dinilai -->
-                <table>
-                    <tr class="section-title">
-                        <td colspan="2">PEGAWAI YANG DINILAI</td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
+                    <tr>
+                        <td colspan="2" style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PEGAWAI YANG DINILAI</td>
                     </tr>
                     <tr>
-                        <td width="30%"><strong>Nama</strong></td>
-                        <td>' . $pegawai['nama'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Nama</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $pegawai['nama'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>NIP</strong></td>
-                        <td>' . $pegawai['nip'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>NIP</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $pegawai['nip'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Pangkat/Golongan</strong></td>
-                        <td>' . $pegawai['pangkat_golongan'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Pangkat/Golongan</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $pegawai['pangkat_golongan'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Jabatan</strong></td>
-                        <td>' . $pegawai['jabatan'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Jabatan</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $pegawai['jabatan'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Unit Kerja</strong></td>
-                        <td>' . $pegawai['unit_kerja'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Unit Kerja</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $pegawai['unit_kerja'] . '</td>
                     </tr>
                 </table>
 
-                <!-- Informasi Pejabat Penilai -->
-                <table>
-                    <tr class="section-title">
-                        <td colspan="2">PEJABAT PENILAI</td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
+                    <tr>
+                        <td colspan="2" style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PEJABAT PENILAI</td>
                     </tr>
                     <tr>
-                        <td width="30%"><strong>Nama</strong></td>
-                        <td>' . $penilai['nama'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Nama</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $penilai['nama'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>NIP</strong></td>
-                        <td>' . $penilai['nip'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>NIP</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $penilai['nip'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Pangkat/Golongan</strong></td>
-                        <td>' . $penilai['pangkat_golongan'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Pangkat/Golongan</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $penilai['pangkat_golongan'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Jabatan</strong></td>
-                        <td>' . $penilai['jabatan'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Jabatan</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $penilai['jabatan'] . '</td>
                     </tr>
                     <tr>
-                        <td><strong>Unit Kerja</strong></td>
-                        <td>' . $penilai['unit_kerja'] . '</td>
+                        <td style="width: 25%; padding: 8px; text-align: left; border: 1px solid #000;"><strong>Unit Kerja</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $penilai['unit_kerja'] . '</td>
                     </tr>
                 </table>
 
-                <!-- Hasil Kerja Utama -->
-                <table>
-                    <tr class="section-title">
-                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '">HASIL KERJA UTAMA</td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; table-layout: fixed;">
+                    <colgroup>
+                        <col style="width: 40px;">
+                        ' . ($tipe == 1 ? '<col>' : '<col style="width: 30%;"><col style="width: calc(35% - 20px);"><col style="width: calc(35% - 20px);">') . '
+                    </colgroup>
+                    <tr>
+                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '" style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">HASIL KERJA UTAMA</td>
                     </tr>
-                    <tr class="bg-gray text-center">';
+                    <tr>';
                     
                     if ($tipe == 1) {
                         $html .= '
-                        <th width="5%">No</th>
-                        <th width="95%">Kegiatan</th>';
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">No</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Kegiatan</td>';
                     } else {
                         $html .= '
-                        <th width="5%">No</th>
-                        <th width="35%">Kegiatan</th>
-                        <th width="30%">Ukuran Keberhasilan</th>
-                        <th width="30%">Realisasi</th>';
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">No</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Kegiatan</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Ukuran Keberhasilan</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Realisasi</td>';
                     }
                     
                     $html .= '
@@ -492,16 +442,16 @@ class LapController extends Controller
                         if ($tipe == 1) {
                             $html .= '
                     <tr>
-                        <td class="text-center">' . $no++ . '</td>
-                        <td>' . $kegiatan . '</td>
+                        <td style="padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #000;">' . $no++ . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $kegiatan . '</td>
                     </tr>';
                         } else {
                             $html .= '
                     <tr>
-                        <td class="text-center">' . $no++ . '</td>
-                        <td>' . $kegiatan . '</td>
-                        <td>' . $ukuran . '</td>
-                        <td>' . $realisasi . '</td>
+                        <td style="padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #000;">' . $no++ . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $kegiatan . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $ukuran . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $realisasi . '</td>
                     </tr>';
                         }
                     }
@@ -510,30 +460,33 @@ class LapController extends Controller
                         $colspan = ($tipe == 1) ? '2' : '4';
                         $html .= '
                     <tr>
-                        <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
+                        <td colspan="' . $colspan . '" style="padding: 8px; text-align: center; border: 1px solid #000;">Tidak ada data</td>
                     </tr>';
                     }
                     
                     $html .= '
                 </table>
 
-                <!-- Hasil Kerja Tambahan -->
-                <table>
-                    <tr class="section-title">
-                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '">HASIL KERJA TAMBAHAN</td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; table-layout: fixed;">
+                    <colgroup>
+                        <col style="width: 40px;">
+                        ' . ($tipe == 1 ? '<col>' : '<col style="width: 30%;"><col style="width: calc(35% - 20px);"><col style="width: calc(35% - 20px);">') . '
+                    </colgroup>
+                    <tr>
+                        <td colspan="' . ($tipe == 1 ? '2' : '4') . '" style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">HASIL KERJA TAMBAHAN</td>
                     </tr>
-                    <tr class="bg-gray text-center">';
+                    <tr>';
                     
                     if ($tipe == 1) {
                         $html .= '
-                        <th width="5%">No</th>
-                        <th width="95%">Kegiatan</th>';
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">No</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Kegiatan</td>';
                     } else {
                         $html .= '
-                        <th width="5%">No</th>
-                        <th width="35%">Kegiatan</th>
-                        <th width="30%">Ukuran Keberhasilan</th>
-                        <th width="30%">Realisasi</th>';
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">No</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Kegiatan</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Ukuran Keberhasilan</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Realisasi</td>';
                     }
                     
                     $html .= '
@@ -548,16 +501,16 @@ class LapController extends Controller
                         if ($tipe == 1) {
                             $html .= '
                     <tr>
-                        <td class="text-center">' . $no++ . '</td>
-                        <td>' . $kegiatan . '</td>
+                        <td style="padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #000;">' . $no++ . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $kegiatan . '</td>
                     </tr>';
                         } else {
                             $html .= '
                     <tr>
-                        <td class="text-center">' . $no++ . '</td>
-                        <td>' . $kegiatan . '</td>
-                        <td>' . $ukuran . '</td>
-                        <td>' . $realisasi . '</td>
+                        <td style="padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #000;">' . $no++ . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $kegiatan . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $ukuran . '</td>
+                        <td style="padding: 8px; text-align: left; vertical-align: middle; border: 1px solid #000;">' . $realisasi . '</td>
                     </tr>';
                         }
                     }
@@ -566,57 +519,63 @@ class LapController extends Controller
                         $colspan = ($tipe == 1) ? '2' : '4';
                         $html .= '
                     <tr>
-                        <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
+                        <td colspan="' . $colspan . '" style="padding: 8px; text-align: center; border: 1px solid #000;">Tidak ada data</td>
                     </tr>';
                     }
                     
                     $html .= '
                 </table>
 
-                <!-- Rating Hasil Kerja -->';
+                ';
                 
                 if ($tipe != 1) {
                     $html .= '
-                <table>
-                    <tr class="bg-gray">
-                        <td width="30%"><strong>Rating Hasil Kerja</strong></td>
-                        <td><strong>' . $rating_hasil_kerja . '</strong></td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
+                    <tr>
+                        <td style="width: 30%; padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>Rating Hasil Kerja</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $rating_hasil_kerja . '</strong></td>
                     </tr>
                 </table>';
                 }
                 
                 $html .= '
 
-                <!-- Perilaku Kerja -->
-                <table>
-                    <tr class="section-title">
-                        <td colspan="3">PERILAKU KERJA</td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; table-layout: fixed;">
+                    <colgroup>
+                        <col style="width: 40px;">
+                        <col style="width: 45%;">
+                        <col style="width: calc(55% - 40px);">
+                    </colgroup>
+                    <tr>
+                        <td colspan="3" style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PERILAKU KERJA</td>
                     </tr>
-                    <tr class="bg-gray text-center">
-                        <th width="5%">No</th>
-                        <th width="50%">Perilaku Kerja</th>
-                        <th width="45%">Ekspektasi Pimpinan</th>
+                    <tr>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">No</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Perilaku Kerja</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #e0e0e0;">Ekspektasi Pimpinan</td>
                     </tr>';
                     
                     foreach ($perilaku_kerja as $pk) {
-                        // Hitung jumlah baris untuk rowspan (1 untuk parent + jumlah items)
-                        $rowspan = 1 + count($pk['items']);
+                        // Debug: Log jumlah items
+                        $items_count = isset($pk['items']) ? count($pk['items']) : 0;
                         
-                        $html .= '
-                    <tr>
-                        <td class="text-center"><strong>' . $pk['no'] . '</strong></td>
-                        <td><strong>' . $pk['perilaku_kerja'] . '</strong></td>
-                        <td rowspan="' . $rowspan . '" style="vertical-align: top;">' . $pk['ekspektasi_pimpinan'] . '</td>
-                    </tr>';
+                        // Hitung jumlah baris untuk rowspan (1 untuk parent + jumlah items)
+                        $rowspan = 1 + $items_count;
+                        
+                        // Baris pertama (parent) dengan rowspan
+                        $html .= '<tr>';
+                        $html .= '<td style="padding: 8px; text-align: center; border: 1px solid #000;"><strong>' . $pk['no'] . '</strong></td>';
+                        $html .= '<td style="padding: 8px; text-align: left; border: 1px solid #000;"><strong>' . $pk['perilaku_kerja'] . '</strong></td>';
+                        $html .= '<td rowspan="' . $rowspan . '" style="padding: 8px; text-align: left; vertical-align: top; border: 1px solid #000;">' . $pk['ekspektasi_pimpinan'] . '</td>';
+                        $html .= '</tr>';
                         
                         // Tampilkan sub-items
-                        if (!empty($pk['items'])) {
+                        if (!empty($pk['items']) && is_array($pk['items'])) {
                             foreach ($pk['items'] as $item) {
-                                $html .= '
-                    <tr>
-                        <td class="text-center">' . $item['kode'] . '</td>
-                        <td>' . $item['perilaku_kerja'] . '</td>
-                    </tr>';
+                                $html .= '<tr>';
+                                $html .= '<td style="padding: 8px; text-align: center; border: 1px solid #000;">' . $item['kode'] . '</td>';
+                                $html .= '<td style="padding: 8px; text-align: left; border: 1px solid #000;">' . $item['perilaku_kerja'] . '</td>';
+                                $html .= '</tr>';
                             }
                         }
                     }
@@ -624,65 +583,60 @@ class LapController extends Controller
                     $html .= '
                 </table>
 
-                <!-- Rating Perilaku Kerja -->';
+                ';
                 
                 if ($tipe != 1) {
                     $html .= '
-                <table>
-                    <tr class="bg-gray">
-                        <td width="30%"><strong>Rating Perilaku Kerja</strong></td>
-                        <td><strong>' . $rating_perilaku_kerja . '</strong></td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
+                    <tr>
+                        <td style="width: 30%; padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>Rating Perilaku Kerja</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $rating_perilaku_kerja . '</strong></td>
                     </tr>
                 </table>
 
-                <!-- Predikat Kinerja -->
-                <table>
-                    <tr class="bg-gray">
-                        <td width="30%"><strong>Predikat Kinerja</strong></td>
-                        <td><strong>' . $predikat_kinerja . '</strong></td>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
+                    <tr>
+                        <td style="width: 30%; padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>Predikat Kinerja</strong></td>
+                        <td style="padding: 8px; text-align: left; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $predikat_kinerja . '</strong></td>
                     </tr>
                 </table>';
                 }
                 
                 $html .= '
 
-                <!-- Tanda Tangan -->
-                <table style="margin-top: 30px;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 40px; border: none;">
                     <tr>
-                        <td width="50%" style="vertical-align: top; padding: 20px;">
-                            <div style="text-align: center;">
-                                <strong>PEGAWAI YANG DINILAI</strong>
-                                <br><br><br><br><br>
-                                <strong>' . $pegawai['nama'] . '</strong><br>
-                                NIP. ' . $pegawai['nip'] . '
+                        <td style="width: 50%; padding: 15px; vertical-align: bottom; text-align: center; border: none;">
+                            <div style="margin-bottom: 10px;"><strong>PEGAWAI YANG DINILAI</strong></div>
+                            <div style="height: 80px;"></div>
+                            <div style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; padding-bottom: 2px; margin-bottom: 5px;">
+                                <strong>' . $pegawai['nama'] . '</strong>
                             </div>
+                            <div>NIP. ' . $pegawai['nip'] . '</div>
                         </td>
-                        <td width="50%" style="vertical-align: top; padding: 20px;">
-                            <div style="text-align: center;">
-                                <strong>PEJABAT PENILAI</strong>
-                                <br><br><br><br><br>
-                                <strong>' . $penilai['nama'] . '</strong><br>
-                                NIP. ' . $penilai['nip'] . '
+                        <td style="width: 50%; padding: 15px; vertical-align: bottom; text-align: center; border: none;">
+                            <div style="margin-bottom: 10px;"><strong>PEJABAT PENILAI</strong></div>
+                            <div style="height: 80px;"></div>
+                            <div style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; padding-bottom: 2px; margin-bottom: 5px;">
+                                <strong>' . $penilai['nama'] . '</strong>
                             </div>
+                            <div>NIP. ' . $penilai['nip'] . '</div>
                         </td>
                     </tr>
                 </table>
 
-                <!-- Tanggal Pencetakan dan QR Code -->
-                <table style="margin-top: 20px;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #000;">
                     <tr>
-                        <td width="70%" style="padding: 10px;">
-                            <strong>Dicetak pada:</strong> ' . date('d F Y, H:i:s') . '
+                        <td style="width: 70%; padding: 15px; vertical-align: middle; text-align: left; border: 1px solid #000;">
+                            <div><strong>Dicetak pada:</strong> ' . date('d F Y, H:i:s') . '</div>
                         </td>
-                        <td width="30%" style="text-align: center; padding: 10px;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' . urlencode($uid) . '" alt="QR Code" style="width: 100px; height: 100px;">
-                            
+                        <td style="width: 30%; padding: 10px; vertical-align: middle; text-align: center; border: 1px solid #000;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($uid) . '" alt="QR Code" style="width: 120px; height: 120px; display: block; margin: 0 auto;">
                         </td>
                     </tr>
                 </table>
 
-            </body>
-            </html>';
+            </div>';
             
             return response($html)->header('Content-Type', 'text/html');
         } else {
@@ -714,8 +668,8 @@ class LapController extends Controller
         $skp_tipe_nama = $skp_tipe->skp_tipe;
         
         // ---Header
-        // Logo menggunakan URL eksternal dari skpv2.untirta.ac.id
-        $logo_url = 'https://skpv2.untirta.ac.id/images/favicon.png';
+        // Logo menggunakan URL eksternal dari CDN
+        $logo_url = 'https://cdn.jsdelivr.net/gh/seiranoku/ukonstyles@main/images/favicon.png';
         $logo_html = '<img src="' . $logo_url . '" alt="Logo Untirta" style="width: 80px; height: 80px; display: block; margin: 0 auto 10px;">';
         
         $institusi = "UNIVERSITAS SULTAN AGENG TIRTAYASA";
@@ -815,29 +769,31 @@ class LapController extends Controller
         // Kelompokkan perilaku kerja berdasarkan kategori utama
         $perilaku_kerja_grouped = [];
         
-        // Ambil semua parent (yang tidak memiliki parent)
-        $parents = $ref_perilaku_kerja_all->whereNull('parent');
-        
-        foreach ($parents as $parent) {
-            $parent_kode = $parent->kode;
+        // Filter parent (kode integer: 1, 2, 3, dst) dan child (kode decimal: 1.1, 1.2, 1.3, dst)
+        foreach ($ref_perilaku_kerja_all as $item) {
+            $kode = $item->kode;
             
-            // Buat struktur parent
-            $perilaku_kerja_grouped[$parent_kode] = [
-                'no' => $parent_kode,
-                'kode' => $parent_kode,
-                'perilaku_kerja' => $parent->perilaku_kerja,
-                'ekspektasi_pimpinan' => $ekspektasi_map[$parent_kode] ?? '',
-                'items' => []
-            ];
-            
-            // Ambil semua children dari parent ini
-            $children = $ref_perilaku_kerja_all->where('parent', $parent_kode);
-            
-            foreach ($children as $child) {
-                $perilaku_kerja_grouped[$parent_kode]['items'][] = [
-                    'kode' => $child->kode,
-                    'perilaku_kerja' => $child->perilaku_kerja,
+            // Jika kode adalah integer (1, 2, 3, dst), ini adalah parent
+            if (strpos($kode, '.') === false) {
+                $perilaku_kerja_grouped[$kode] = [
+                    'no' => $kode,
+                    'kode' => $kode,
+                    'perilaku_kerja' => $item->perilaku_kerja,
+                    'ekspektasi_pimpinan' => $ekspektasi_map[$kode] ?? '',
+                    'items' => []
                 ];
+            } else {
+                // Jika kode adalah decimal (1.1, 1.2, dst), ini adalah child
+                // Ambil parent kode (bagian sebelum titik)
+                $parent_kode = explode('.', $kode)[0];
+                
+                // Tambahkan sebagai child dari parent
+                if (isset($perilaku_kerja_grouped[$parent_kode])) {
+                    $perilaku_kerja_grouped[$parent_kode]['items'][] = [
+                        'kode' => $kode,
+                        'perilaku_kerja' => $item->perilaku_kerja,
+                    ];
+                }
             }
         }
         
@@ -852,162 +808,85 @@ class LapController extends Controller
 
         // ---Generate HTML untuk PDF
         $html = '
-        <!DOCTYPE html>
-        <html lang="id">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Lembar SKP - ' . $pegawai['nama'] . '</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 10px;
-                    font-size: 10px;
-                    line-height: 1.3;
-                }
-                .header {
-                    text-align: center;
-                    margin-bottom: 5px;
-                }
-                .header img {
-                    width: 60px;
-                    height: 60px;
-                    margin-bottom: 3px;
-                }
-                .header h2 {
-                    margin: 2px 0;
-                    font-size: 13px;
-                    line-height: 1.2;
-                }
-                .header h3 {
-                    margin: 1px 0;
-                    font-size: 11px;
-                    line-height: 1.2;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 4px;
-                }
-                table, th, td {
-                    border: 1px solid #000;
-                }
-                th, td {
-                    padding: 3px 4px;
-                    text-align: left;
-                    line-height: 1.3;
-                }
-                th {
-                    background-color: #f0f0f0;
-                    font-weight: bold;
-                }
-                .text-center {
-                    text-align: center;
-                }
-                .text-right {
-                    text-align: right;
-                }
-                .bg-gray {
-                    background-color: #e0e0e0;
-                }
-                .section-title {
-                    background-color: #d0d0d0;
-                    font-weight: bold;
-                    text-align: center;
-                    padding: 4px !important;
-                }
-                .no-border {
-                    border: none;
-                }
-                .info-table td {
-                    border: none;
-                    padding: 2px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
+        <div style="font-family: Arial, sans-serif; margin: 10px; font-size: 10px; line-height: 1.3;">
+            <div style="text-align: center; margin-bottom: 5px;">
                 ' . $header['logo_html'] . '
-                <h2>' . $header['institusi'] . '</h2>
-                <h3>' . $header['judul_1'] . '</h3>
-                <h3>' . $header['judul_2'] . '</h3>
+                <div style="margin: 2px 0; font-size: 13px; line-height: 1.2; font-weight: bold;">' . $header['institusi'] . '</div>
+                <div style="margin: 1px 0; font-size: 11px; line-height: 1.2; font-weight: bold;">' . $header['judul_1'] . '</div>
+                <div style="margin: 1px 0; font-size: 11px; line-height: 1.2; font-weight: bold;">' . $header['judul_2'] . '</div>
             </div>
 
-            <!-- Informasi Periode -->
-            <table class="info-table">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
                 <tr>
-                    <td width="30%"><strong>Periode Penilaian</strong></td>
-                    <td>: ' . $periode['tgl_penilaian_indo'] . '</td>
+                    <td style="width: 30%; padding: 2px; text-align: left; border: none;"><strong>Periode Penilaian</strong></td>
+                    <td style="padding: 2px; text-align: left; border: none;">: ' . $periode['tgl_penilaian_indo'] . '</td>
                 </tr>
             </table>
 
-            <!-- Informasi Pegawai yang Dinilai -->
-            <table>
-                <tr class="section-title">
-                    <td colspan="2">PEGAWAI YANG DINILAI</td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td colspan="2" style="padding: 4px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PEGAWAI YANG DINILAI</td>
                 </tr>
                 <tr>
-                    <td width="30%"><strong>Nama</strong></td>
-                    <td>' . $pegawai['nama'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Nama</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $pegawai['nama'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>NIP</strong></td>
-                    <td>' . $pegawai['nip'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>NIP</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $pegawai['nip'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Pangkat/Golongan</strong></td>
-                    <td>' . $pegawai['pangkat_golongan'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Pangkat/Golongan</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $pegawai['pangkat_golongan'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Jabatan</strong></td>
-                    <td>' . $pegawai['jabatan'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Jabatan</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $pegawai['jabatan'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Unit Kerja</strong></td>
-                    <td>' . $pegawai['unit_kerja'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Unit Kerja</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $pegawai['unit_kerja'] . '</td>
                 </tr>
             </table>
 
-            <!-- Informasi Pejabat Penilai -->
-            <table>
-                <tr class="section-title">
-                    <td colspan="2">PEJABAT PENILAI</td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td colspan="2" style="padding: 4px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PEJABAT PENILAI</td>
                 </tr>
                 <tr>
-                    <td width="30%"><strong>Nama</strong></td>
-                    <td>' . $penilai['nama'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Nama</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $penilai['nama'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>NIP</strong></td>
-                    <td>' . $penilai['nip'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>NIP</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $penilai['nip'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Pangkat/Golongan</strong></td>
-                    <td>' . $penilai['pangkat_golongan'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Pangkat/Golongan</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $penilai['pangkat_golongan'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Jabatan</strong></td>
-                    <td>' . $penilai['jabatan'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Jabatan</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $penilai['jabatan'] . '</td>
                 </tr>
                 <tr>
-                    <td><strong>Unit Kerja</strong></td>
-                    <td>' . $penilai['unit_kerja'] . '</td>
+                    <td style="width: 25%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>Unit Kerja</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $penilai['unit_kerja'] . '</td>
                 </tr>
             </table>
 
-            <!-- Hasil Kerja Utama -->
-            <table>
-                <tr class="section-title">
-                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '">HASIL KERJA UTAMA</td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '" style="padding: 4px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">HASIL KERJA UTAMA</td>
                 </tr>
-                <tr class="bg-gray text-center">
-                    <th width="5%">No</th>
-                    <th width="' . ($tipe == '1' ? '95%' : '35%') . '">Kegiatan</th>';
+                <tr>
+                    <td style="width: 5%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">No</td>
+                    <td style="width: ' . ($tipe == '1' ? '95%' : '35%') . '; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Kegiatan</td>';
                     
                 if ($tipe != '1') {
                     $html .= '
-                    <th width="30%">Ukuran Keberhasilan</th>
-                    <th width="30%">Realisasi</th>';
+                    <td style="width: 30%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Ukuran Keberhasilan</td>
+                    <td style="width: 30%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Realisasi</td>';
                 }
                 
                 $html .= '
@@ -1021,13 +900,13 @@ class LapController extends Controller
                     
                     $html .= '
                 <tr>
-                    <td class="text-center">' . $no++ . '</td>
-                    <td>' . $kegiatan . '</td>';
+                    <td style="padding: 3px 4px; text-align: center; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $no++ . '</td>
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $kegiatan . '</td>';
                     
                     if ($tipe != '1') {
                         $html .= '
-                    <td>' . $ukuran . '</td>
-                    <td>' . $realisasi . '</td>';
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $ukuran . '</td>
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $realisasi . '</td>';
                     }
                     
                     $html .= '
@@ -1038,26 +917,25 @@ class LapController extends Controller
                     $colspan = ($tipe == '1') ? '2' : '4';
                     $html .= '
                 <tr>
-                    <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
+                    <td colspan="' . $colspan . '" style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000;">Tidak ada data</td>
                 </tr>';
                 }
                 
                 $html .= '
             </table>
 
-            <!-- Hasil Kerja Tambahan -->
-            <table>
-                <tr class="section-title">
-                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '">HASIL KERJA TAMBAHAN</td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td colspan="' . ($tipe == '1' ? '2' : '4') . '" style="padding: 4px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">HASIL KERJA TAMBAHAN</td>
                 </tr>
-                <tr class="bg-gray text-center">
-                    <th width="5%">No</th>
-                    <th width="' . ($tipe == '1' ? '95%' : '35%') . '">Kegiatan</th>';
+                <tr>
+                    <td style="width: 5%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">No</td>
+                    <td style="width: ' . ($tipe == '1' ? '95%' : '35%') . '; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Kegiatan</td>';
                     
                 if ($tipe != '1') {
                     $html .= '
-                    <th width="30%">Ukuran Keberhasilan</th>
-                    <th width="30%">Realisasi</th>';
+                    <td style="width: 30%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Ukuran Keberhasilan</td>
+                    <td style="width: 30%; padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Realisasi</td>';
                 }
                 
                 $html .= '
@@ -1071,13 +949,13 @@ class LapController extends Controller
                     
                     $html .= '
                 <tr>
-                    <td class="text-center">' . $no++ . '</td>
-                    <td>' . $kegiatan . '</td>';
+                    <td style="padding: 3px 4px; text-align: center; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $no++ . '</td>
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $kegiatan . '</td>';
                     
                     if ($tipe != '1') {
                         $html .= '
-                    <td>' . $ukuran . '</td>
-                    <td>' . $realisasi . '</td>';
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $ukuran . '</td>
+                    <td style="padding: 3px 4px; text-align: left; vertical-align: middle; line-height: 1.3; border: 1px solid #000;">' . $realisasi . '</td>';
                     }
                     
                     $html .= '
@@ -1088,7 +966,7 @@ class LapController extends Controller
                     $colspan = ($tipe == '1') ? '2' : '4';
                     $html .= '
                 <tr>
-                    <td colspan="' . $colspan . '" class="text-center">Tidak ada data</td>
+                    <td colspan="' . $colspan . '" style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000;">Tidak ada data</td>
                 </tr>';
                 }
                 
@@ -1100,47 +978,49 @@ class LapController extends Controller
             // Rating Hasil Kerja hanya ditampilkan jika tipe != 1
             if ($tipe != '1') {
                 $html .= '
-            <!-- Rating Hasil Kerja -->
-            <table>
-                <tr class="bg-gray">
-                    <td width="30%"><strong>Rating Hasil Kerja</strong></td>
-                    <td><strong>' . $rating_hasil_kerja . '</strong></td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td style="width: 30%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>Rating Hasil Kerja</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $rating_hasil_kerja . '</strong></td>
                 </tr>
             </table>';
             }
             
             $html .= '
 
-            <!-- Perilaku Kerja -->
-            <table>
-                <tr class="section-title">
-                    <td colspan="3">PERILAKU KERJA</td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000; table-layout: fixed;">
+                <colgroup>
+                    <col style="width: 35px;">
+                    <col style="width: 45%;">
+                    <col style="width: calc(55% - 35px);">
+                </colgroup>
+                <tr>
+                    <td colspan="3" style="padding: 4px; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #d0d0d0;">PERILAKU KERJA</td>
                 </tr>
-                <tr class="bg-gray text-center">
-                    <th width="5%">No</th>
-                    <th width="50%">Perilaku Kerja</th>
-                    <th width="45%">Ekspektasi Pimpinan</th>
+                <tr>
+                    <td style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">No</td>
+                    <td style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Perilaku Kerja</td>
+                    <td style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0; font-weight: bold;">Ekspektasi Pimpinan</td>
                 </tr>';
                 
                 foreach ($perilaku_kerja as $pk) {
                     // Hitung jumlah baris untuk rowspan (1 untuk parent + jumlah items)
                     $rowspan = 1 + count($pk['items']);
                     
-                    $html .= '
-                <tr>
-                    <td class="text-center"><strong>' . $pk['no'] . '</strong></td>
-                    <td><strong>' . $pk['perilaku_kerja'] . '</strong></td>
-                    <td rowspan="' . $rowspan . '" style="vertical-align: top;">' . $pk['ekspektasi_pimpinan'] . '</td>
-                </tr>';
+                    // Baris pertama (parent) dengan rowspan
+                    $html .= '<tr>';
+                    $html .= '<td style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000;"><strong>' . $pk['no'] . '</strong></td>';
+                    $html .= '<td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;"><strong>' . $pk['perilaku_kerja'] . '</strong></td>';
+                    $html .= '<td rowspan="' . $rowspan . '" style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; vertical-align: top;">' . $pk['ekspektasi_pimpinan'] . '</td>';
+                    $html .= '</tr>';
                     
                     // Tampilkan sub-items
                     if (!empty($pk['items'])) {
                         foreach ($pk['items'] as $item) {
-                            $html .= '
-                <tr>
-                    <td class="text-center">' . $item['kode'] . '</td>
-                    <td>' . $item['perilaku_kerja'] . '</td>
-                </tr>';
+                            $html .= '<tr>';
+                            $html .= '<td style="padding: 3px 4px; text-align: center; line-height: 1.3; border: 1px solid #000;">' . $item['kode'] . '</td>';
+                            $html .= '<td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000;">' . $item['perilaku_kerja'] . '</td>';
+                            $html .= '</tr>';
                         }
                     }
                 }
@@ -1152,29 +1032,26 @@ class LapController extends Controller
             if ($tipe != '1') {
                 $html .= '
 
-            <!-- Rating Perilaku Kerja -->
-            <table>
-                <tr class="bg-gray">
-                    <td width="30%"><strong>Rating Perilaku Kerja</strong></td>
-                    <td><strong>' . $rating_perilaku_kerja . '</strong></td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td style="width: 30%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>Rating Perilaku Kerja</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $rating_perilaku_kerja . '</strong></td>
                 </tr>
             </table>
 
-            <!-- Predikat Kinerja -->
-            <table>
-                <tr class="bg-gray">
-                    <td width="30%"><strong>Predikat Kinerja</strong></td>
-                    <td><strong>' . $predikat_kinerja . '</strong></td>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px; border: 1px solid #000;">
+                <tr>
+                    <td style="width: 30%; padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>Predikat Kinerja</strong></td>
+                    <td style="padding: 3px 4px; text-align: left; line-height: 1.3; border: 1px solid #000; background-color: #e0e0e0;"><strong>' . $predikat_kinerja . '</strong></td>
                 </tr>
             </table>';
             }
             
             $html .= '
 
-            <!-- Tanda Tangan -->
-            <table style="margin-top: 8px; margin-bottom: 4px;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 4px; border: 1px solid #000;">
                 <tr>
-                    <td width="50%" style="vertical-align: top; padding: 5px;">
+                    <td style="width: 50%; vertical-align: top; padding: 5px; border: 1px solid #000;">
                         <div style="text-align: center; font-size: 9px;">
                             <strong>PEGAWAI YANG DINILAI</strong>
                             <br><br><br>
@@ -1182,7 +1059,7 @@ class LapController extends Controller
                             NIP. ' . $pegawai['nip'] . '
                         </div>
                     </td>
-                    <td width="50%" style="vertical-align: top; padding: 5px;">
+                    <td style="width: 50%; vertical-align: top; padding: 5px; border: 1px solid #000;">
                         <div style="text-align: center; font-size: 9px;">
                             <strong>PEJABAT PENILAI</strong>
                             <br><br><br>
@@ -1193,18 +1070,16 @@ class LapController extends Controller
                 </tr>
             </table>
 
-            <!-- Tanggal Pencetakan -->
-            <table style="margin-bottom: 0;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 0; border: 1px solid #000;">
                 <tr>
-                    <td style="padding: 3px; font-size: 9px;">
+                    <td style="padding: 3px; font-size: 9px; border: 1px solid #000;">
                         <strong>Dicetak pada:</strong> ' . date('d F Y, H:i:s') . '<br>
                         <strong>Kode Dokumen:</strong> ' . $uid . '
                     </td>
                 </tr>
             </table>
 
-        </body>
-        </html>';
+        </div>';
         
         // Generate PDF
         $pdf = Pdf::loadHTML($html);
