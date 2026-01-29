@@ -43,3 +43,39 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 - 🧪 Built-in test page dengan cookie viewer
 
 ---
+
+## 🔗 Git Remote Repositories
+
+Repository ini terhubung ke beberapa remote repositories:
+
+```bash
+# Remote repositories yang tersedia:
+origin     → https://github.com/seiranoku/NewSKP-Backend.git
+seiranoku  → https://github.com/seiranoku21/newskp-backend.git
+untirta    → https://github.com/untirta-developer/uobe-backend.git
+upstream   → https://github.com/seiranoku/NewSKP-Backend.git
+```
+
+### Push ke Repository:
+
+```bash
+# Push ke repository seiranoku21
+git push seiranoku main
+
+# Push ke repository organisasi untirta-developer
+git push untirta main
+
+# Push ke repository origin
+git push origin main
+
+# Push ke semua repository sekaligus
+git push seiranoku main && git push untirta main && git push origin main
+```
+
+### Credential Helper:
+Credential helper sudah disetup untuk menyimpan username & token secara otomatis.
+Credentials disimpan di: `~/.git-credentials`
+
+**Catatan:** Gunakan **Personal Access Token** sebagai password, bukan password GitHub biasa.
+
+---
