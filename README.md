@@ -50,32 +50,38 @@ Repository ini terhubung ke beberapa remote repositories:
 
 ```bash
 # Remote repositories yang tersedia:
-origin     → https://github.com/seiranoku/NewSKP-Backend.git
-seiranoku  → https://github.com/seiranoku21/newskp-backend.git
-untirta    → https://github.com/untirta-developer/newskp-backend.git
-upstream   → https://github.com/seiranoku/NewSKP-Backend.git
+origin     → https://github.com/seiranoku/NewSKP-Backend.git (HTTPS)
+seiranoku  → https://github.com/seiranoku21/newskp-backend.git (HTTPS)
+untirta    → git@github.com:untirta-developer/newskp-backend.git (SSH) ✅
+upstream   → https://github.com/seiranoku/NewSKP-Backend.git (HTTPS)
 ```
 
 ### Push ke Repository:
 
 ```bash
-# Push ke repository seiranoku21
+# Push ke repository seiranoku21 (HTTPS - perlu credentials)
 git push seiranoku main
 
-# Push ke repository organisasi untirta-developer
+# Push ke repository organisasi untirta-developer (SSH - otomatis)
 git push untirta main
 
-# Push ke repository origin
+# Push ke repository origin (HTTPS - perlu credentials)
 git push origin main
 
 # Push ke semua repository sekaligus
 git push seiranoku main && git push untirta main && git push origin main
 ```
 
-### Credential Helper:
-Credential helper sudah disetup untuk menyimpan username & token secara otomatis.
-Credentials disimpan di: `~/.git-credentials`
+### Credential & Authentication:
 
-**Catatan:** Gunakan **Personal Access Token** sebagai password, bukan password GitHub biasa.
+**Remote HTTPS** (`origin`, `seiranoku`, `upstream`):
+- Credential helper sudah disetup untuk menyimpan username & token secara otomatis
+- Credentials disimpan di: `~/.git-credentials`
+- Gunakan **Personal Access Token** sebagai password, bukan password GitHub biasa
+
+**Remote SSH** (`untirta`):
+- Menggunakan SSH key authentication
+- SSH key: `~/.ssh/seiranoku21_github`
+- Tidak perlu input credentials setiap kali push
 
 ---
