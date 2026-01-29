@@ -22,3 +22,5 @@ yarn-error.log
 bootstrap/app.php
 /z_dokumen
 /z_dokumen/
+id_ed25519
+id_ed25519.pub
