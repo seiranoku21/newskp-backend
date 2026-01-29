@@ -1,8 +1,7 @@
 # BACKEND REST-API NewSKP Untirta
 
-## 🚀 Recent Updates
 
-### ✨ Google SSO Authentication (January 6, 2026)
+### Google SSO Authentication (January 6, 2026)
 
 Sistem autentikasi Google SSO lengkap telah diimplementasikan dan **terintegrasi dengan pola frontend** yang sudah ada!
 
@@ -17,17 +16,6 @@ POST /api/auth/sso
 - ✅ HttpOnly cookie untuk keamanan maksimal
 - ✅ Compatible dengan sistem autentikasi existing
 
-**📚 Dokumentasi Lengkap:**
-- **[🚀 Integrasi Frontend](./INTEGRASI_FRONTEND.md)** - Panduan integrasi dengan frontend (BACA INI DULU!)
-- [Quick Start Guide](./docs/README_SSO.md) - Mulai dalam 5 menit
-- [API Documentation](./docs/SSO_AUTHENTICATION.md) - Referensi API lengkap
-- [Frontend Integration Detail](./docs/SSO_FRONTEND_INTEGRATION.md) - Detail integrasi frontend
-- [Environment Setup](./docs/ENVIRONMENT_SETUP.md) - Setup Google Cloud Console
-- [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Checklist deployment production
-- [Implementation Summary](./SSO_IMPLEMENTATION_SUMMARY.md) - Ringkasan semua perubahan
-
-**🧪 Halaman Test:**
-- [Test SSO Login](./public/test-sso-login.html) - Interface testing interaktif
 
 **🎯 Quick Start:**
 ```bash
