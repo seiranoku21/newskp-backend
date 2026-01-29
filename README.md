@@ -52,7 +52,7 @@ Repository ini terhubung ke beberapa remote repositories:
 # Remote repositories yang tersedia:
 origin     → https://github.com/seiranoku/NewSKP-Backend.git
 seiranoku  → https://github.com/seiranoku21/newskp-backend.git
-untirta    → https://github.com/untirta-developer/uobe-backend.git
+untirta    → https://github.com/untirta-developer/newskp-backend.git
 upstream   → https://github.com/seiranoku/NewSKP-Backend.git
 ```
 
