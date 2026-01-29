@@ -103,37 +103,42 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 Repository ini terhubung ke beberapa remote repositories:
 
 ```bash
-# Remote repositories yang tersedia (Semua HTTPS):
-origin     → https://github.com/seiranoku/NewSKP-Backend.git
-seiranoku  → https://github.com/seiranoku21/newskp-backend.git ✅
-untirta    → https://github.com/untirta-developer/newskp-backend.git ✅
-upstream   → https://github.com/seiranoku/NewSKP-Backend.git
+# Remote repositories yang tersedia:
+origin     → https://github.com/seiranoku/NewSKP-Backend.git (HTTPS)
+seiranoku  → https://github.com/seiranoku21/newskp-backend.git (HTTPS) ✅
+untirta    → git@github.com:untirta-developer/newskp-backend.git (SSH) ✅
+upstream   → https://github.com/seiranoku/NewSKP-Backend.git (HTTPS)
 ```
 
 ### Push ke Repository:
 
 ```bash
-# Push ke repository seiranoku21
+# Push ke repository seiranoku21 (HTTPS - perlu credentials)
 git push seiranoku main
 
-# Push ke repository organisasi untirta-developer
+# Push ke repository organisasi untirta-developer (SSH - otomatis)
 git push untirta main
 
-# Push ke repository origin
+# Push ke repository origin (HTTPS - perlu credentials)
 git push origin main
 
 # Push ke beberapa repository sekaligus
 git push seiranoku main && git push untirta main
 ```
 
-### Credential Helper:
+### Authentication & Credentials:
 
-Credential helper sudah disetup untuk semua remote HTTPS:
-- Credentials disimpan otomatis di: `~/.git-credentials`
+**Remote HTTPS** (`origin`, `seiranoku`, `upstream`):
+- Credential helper aktif, credentials disimpan otomatis di: `~/.git-credentials`
 - Gunakan **Personal Access Token** sebagai password (bukan password GitHub)
 - Setelah input pertama kali, credentials tersimpan untuk push berikutnya
 
-**Cara membuat Personal Access Token:**
+**Remote SSH** (`untirta`):
+- Menggunakan SSH key: `~/.ssh/seiranoku21_github`
+- Push langsung tanpa perlu input credentials
+- Otomatis menggunakan SSH key yang sudah dikonfigurasi
+
+**Cara membuat Personal Access Token (untuk HTTPS):**
 1. Buka: https://github.com/settings/tokens
 2. Klik "Generate new token (classic)"
 3. Pilih scope: `repo` (full control)
