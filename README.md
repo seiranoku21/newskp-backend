@@ -31,13 +31,6 @@ GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
-# 3. Clear cache
-php artisan config:clear && php artisan config:cache
-
-# 4. Test endpoint
-# Buka: http://localhost:8000/test-sso-login.html
-```
-
 **✅ Fitur:**
 - ✨ Google OAuth 2.0 authentication
 - 🔐 Verifikasi ID token
