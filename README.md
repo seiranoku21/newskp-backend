@@ -1,5 +1,59 @@
 # BACKEND REST-API NewSKP Untirta
 
+## 🛠️ Tech Stack
+
+### Core Framework
+- **PHP**: ^8.1
+- **Laravel**: ^10.10
+- **Laravel Passport**: ^11.8 (OAuth2 Authentication)
+- **Laravel Sanctum**: ^3.2 (API Token Authentication)
+
+### Frontend Assets & Build Tools
+- **Vite**: ^4.0.0 (Module bundler)
+- **Laravel Vite Plugin**: ^0.7.5
+- **Axios**: ^1.1.2 (HTTP client)
+
+### Authentication & Security
+- **Google OAuth 2.0**: Google API Client ^2.18
+- **JWT Authentication**: Custom implementation with HS256
+- **Laravel Passport**: OAuth2 server implementation
+- **Laravel Sanctum**: API token authentication
+- **CAPTCHA**: mews/captcha ^3.3
+
+### Database & ORM
+- **Eloquent ORM**: Built-in Laravel ORM
+- **Laravel Auditing**: ^13.5 (Activity logging & audit trails)
+
+### File Processing & Storage
+- **Intervention Image**: ^2.7 (Image manipulation)
+- **Laravel Flysystem AWS S3**: ^3.15 (Cloud storage integration)
+- **DomPDF**: ^3.1 (PDF generation)
+- **Maatwebsite Excel**: 3.1.48 (Excel import/export)
+
+### HTTP & External Communication
+- **Guzzle HTTP**: ^7.2 (HTTP client for API calls)
+
+### Development & Testing
+- **PHPUnit**: ^10.1 (Unit testing)
+- **Laravel Pint**: ^1.0 (Code style fixer)
+- **Laravel Sail**: ^1.18 (Docker development environment)
+- **Faker**: ^1.9.1 (Fake data generation)
+- **Mockery**: ^1.4.4 (Mocking framework)
+- **Collision**: ^7.0 (Error reporting)
+- **Spatie Ignition**: ^2.0 (Error page)
+
+### Additional Tools
+- **Laravel Tinker**: ^2.8 (REPL for Laravel)
+
+### System Requirements
+```
+PHP >= 8.1
+Composer
+Node.js & NPM (for asset compilation)
+MySQL/PostgreSQL/SQLite (Database)
+```
+
+---
 
 ### Google SSO Authentication (January 6, 2026)
 
