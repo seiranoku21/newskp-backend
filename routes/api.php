@@ -141,6 +141,10 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('spg_jabatan', 'SimpegController@spg_jabatan');
     Route::get('spg_presensi', 'SimpegController@spg_presensi');
 
+    // ---PEGAWAI
+    Route::get('data_pegawai', 'PegawaiController@data_pegawai');
+    Route::get('data_pegawai/{nip}', 'PegawaiController@get_pegawai_by_nip');
+
     // ---LAPORAN
     Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');
     Route::get('lembar_skp', 'LapController@lembar_skp');
