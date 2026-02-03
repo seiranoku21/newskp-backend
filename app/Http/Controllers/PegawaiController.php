@@ -16,16 +16,15 @@ class PegawaiController extends Controller
     {
         try {
             $query = DB::table('pegawai')
-                ->select('id_pegawai', 'id_user', 'nip', 'nama', 'nama_gelar');
-
+                ->select('*');
             // Filter by NIP if provided
             if ($request->has('nip') && !empty($request->nip)) {
                 $query->where('nip', $request->nip);
             }
 
             // Filter by email if provided
-            if ($request->has('email') && !empty($request->email)) {
-                $query->where('email', $request->email);
+            if ($request->has('id_user') && !empty($request->id_user)) {
+                $query->where('id_user', $request->id_user);
             }
 
             // Search by nama_gelar or nip if search param provided

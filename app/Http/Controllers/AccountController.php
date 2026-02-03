@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Models\permissions;
+use App\Http\Controllers\PegawaiController;
+
 use Exception;
 /**
  * Account Page Controller
@@ -61,6 +63,8 @@ class AccountController extends Controller{
 		$rolesMenu = $user->getRolesMenu();
 
 		$pegawai = DB::table('pegawai')->where('id_user', $user->email)->first();
+		$pegawaiRequest = new Request(['id_user' => $user->email]);
+		$data_pegawai = app(PegawaiController::class)->data_pegawai($pegawaiRequest)->getData(true);
 		
 		// Initialize variables with null defaults
 		$id_pegawai = null;
@@ -105,50 +109,50 @@ class AccountController extends Controller{
 		];
 
 		$data = array_merge($userData, [
-			
 			"roles" => $userRoleName,
 			"roles_menu" => $rolesMenu,
 			"pages" => $userPages,
+			"data_pegawai" => $data_pegawai,
 		]);
 		
 		return $this->respond($data);
 	}
 
 	// Akses Halaman jika login dgn SSO
-	function currentuserdata_sso(Request $request){
+	// function currentuserdata_sso(Request $request){
 		
-		$get_nip = $request->user_nip;
-		$get_user_name = $request->user_name;
-		$get_user_email = $request->user_email;
-		$get_name_info = $request->name_info;
-		$get_user_role_id = (int)$request->role_id;
-		$get_role_name = [$request->role_name];
+	// 	$get_nip = $request->user_nip;
+	// 	$get_user_name = $request->user_name;
+	// 	$get_user_email = $request->user_email;
+	// 	$get_name_info = $request->name_info;
+	// 	$get_user_role_id = (int)$request->role_id;
+	// 	$get_role_name = [$request->role_name];
 
-		$user_detail = 
-			[
-				"user_id" => $get_nip,
-				"username" => $get_user_name,
-				"email" => $get_user_email,
-				"name_info" => $get_name_info,
-				"user_role_id" => $get_user_role_id,
-			]
-		;
+	// 	$user_detail = 
+	// 		[
+	// 			"user_id" => $get_nip,
+	// 			"username" => $get_user_name,
+	// 			"email" => $get_user_email,
+	// 			"name_info" => $get_name_info,
+	// 			"user_role_id" => $get_user_role_id,
+	// 		]
+	// 	;
 
-		$user_sso = $user_detail;
+	// 	$user_sso = $user_detail;
 
-		$data_akses = DB::table('permissions')->where('role_id',$get_user_role_id)->pluck('permission')->toArray();
-		$userPages = $data_akses ; 
+	// 	$data_akses = DB::table('permissions')->where('role_id',$get_user_role_id)->pluck('permission')->toArray();
+	// 	$userPages = $data_akses ; 
 
-		$data_role = DB::table('roles')->where('role_id',$get_user_role_id)->pluck('role_name')->toArray();
-		$userRoleName = $data_role;
+	// 	$data_role = DB::table('roles')->where('role_id',$get_user_role_id)->pluck('role_name')->toArray();
+	// 	$userRoleName = $data_role;
 		
-		$data_sso = [
-			"user" => $user_sso,
-			"pages" => $userPages,
-			"roles" => $userRoleName
-		];
-		return $this->respond($data_sso);
-	}
+	// 	$data_sso = [
+	// 		"user" => $user_sso,
+	// 		"pages" => $userPages,
+	// 		"roles" => $userRoleName
+	// 	];
+	// 	return $this->respond($data_sso);
+	// }
 
 	// Cek Role Lokal & Role SSO
 	function sso_role(Request $request){
@@ -181,40 +185,40 @@ class AccountController extends Controller{
 	}
 
 	// Akses Halaman jika login dgn SSO
-	function currentuserdata_spl(Request $request){
+	// function currentuserdata_spl(Request $request){
 		
-		$get_nip = $request->user_nip;
-		$get_user_name = $request->user_name;
-		$get_user_email = $request->user_email;
-		$get_name_info = $request->name_info;
-		$get_user_role_id = (int)$request->role_id;
-		$get_role_name = [$request->role_name];
+	// 	$get_nip = $request->user_nip;
+	// 	$get_user_name = $request->user_name;
+	// 	$get_user_email = $request->user_email;
+	// 	$get_name_info = $request->name_info;
+	// 	$get_user_role_id = (int)$request->role_id;
+	// 	$get_role_name = [$request->role_name];
 
-		$user_detail = 
-			[
-				"user_id" => $get_nip,
-				"username" => $get_user_name,
-				"email" => $get_user_email,
-				"name_info" => $get_name_info,
-				"user_role_id" => $get_user_role_id,
-			]
-		;
+	// 	$user_detail = 
+	// 		[
+	// 			"user_id" => $get_nip,
+	// 			"username" => $get_user_name,
+	// 			"email" => $get_user_email,
+	// 			"name_info" => $get_name_info,
+	// 			"user_role_id" => $get_user_role_id,
+	// 		]
+	// 	;
 
-		$user_spl = $user_detail;
+	// 	$user_spl = $user_detail;
 
-		$data_akses = DB::table('permissions')->where('role_id',$get_user_role_id)->pluck('permission')->toArray();
-		$userPages = $data_akses ; 
+	// 	$data_akses = DB::table('permissions')->where('role_id',$get_user_role_id)->pluck('permission')->toArray();
+	// 	$userPages = $data_akses ; 
 
-		$data_role = DB::table('roles')->where('role_id',$get_user_role_id)->pluck('role_name')->toArray();
-		$userRoleName = $data_role;
+	// 	$data_role = DB::table('roles')->where('role_id',$get_user_role_id)->pluck('role_name')->toArray();
+	// 	$userRoleName = $data_role;
 		
-		$data_spl = [
-			"user" => $user_spl,
-			"pages" => $userPages,
-			"roles" => $userRoleName
-		];
-		return $this->respond($data_spl);
-	}
+	// 	$data_spl = [
+	// 		"user" => $user_spl,
+	// 		"pages" => $userPages,
+	// 		"roles" => $userRoleName
+	// 	];
+	// 	return $this->respond($data_spl);
+	// }
 
     // Get Photo from Sikita API
     function get_photo(Request $request) {
