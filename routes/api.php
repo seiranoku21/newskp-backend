@@ -113,7 +113,12 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---INTEGRASI START
 
+    // ---PORTOFOLIO KINERJA---
     Route::get('portofolio', 'AglobalController@get_portofolio'); 
+    Route::post('portofolio/add', 'PortofolioKinerjaController@add');	
+    Route::any('portofolio/edit/{rec_id}', 'PortofolioKinerjaController@edit');	
+    Route::any('portofolio/delete/{rec_id}', 'PortofolioKinerjaController@delete');
+
     Route::get('rubrik_kegiatan_rhki', 'AglobalController@rubrik_kegiatan_rhki');	
     Route::get('aktifitas', 'AglobalController@get_aktifitas');	
     Route::post('aktifitas/add', 'AktifitasKinerjaController@tambah_aktifitas');	
