@@ -268,6 +268,7 @@ Route::post('auth/logout', 'AuthController@logout'); // Logout endpoint
 Route::post('auth/sso', 'AuthController@sso'); // New Google SSO endpoint
 Route::post('auth/sso-test', 'AuthController@ssoTest'); // SSO testing endpoint (development only)
 Route::post('auth/sso_login', 'AuthController@sso_login');
+Route::post('auth/sso_untirta_login', 'AuthController@sso_untirta_login');
 Route::post('auth/sso_logout', 'AuthController@sso_logout');
 Route::post('auth/sso_refresh_token', 'AuthController@sso_refresh_token');
 Route::post('auth/sso_userinfo', 'AuthController@sso_userinfo');

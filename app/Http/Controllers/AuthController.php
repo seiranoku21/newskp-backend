@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Google\Client as Google_Client;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
 
 class AuthController extends Controller{
 	
@@ -378,6 +380,81 @@ class AuthController extends Controller{
 			return response()->json([
 				'error' => 'SSO test failed',
 				'message' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	function sso_untirta_login(Request $request) {
+		try {
+			// Terima token dari cookie, query string, body (JSON/form), atau header Authorization
+			$access_token = $request->cookie('access_token')
+				?? $request->input('access_token')
+				?? $request->header('Authorization')
+				?? ($request->bearerToken() ? 'Bearer ' . $request->bearerToken() : null);
+			$access_token = is_string($access_token) ? trim($access_token) : null;
+			if (empty(trim($access_token ?? ''))) {
+				return response()->json([
+					'message' => 'Akses token tidak ditemukan!',
+					'error' => 'access_token is required (cookie, query, body, or Authorization header)'
+				], 400);
+			}
+			// Pastikan format Bearer untuk request ke SSO
+			$authHeader = $access_token;
+			if (!str_starts_with(trim($authHeader), 'Bearer ')) {
+				$authHeader = 'Bearer ' . trim($authHeader);
+			}
+			$client = new GuzzleClient();
+			$headers = [
+				'Authorization' => $authHeader
+			];
+			$guzzleRequest = new GuzzleRequest('POST', 'https://sso.untirta.ac.id/api/v1/userinfo', $headers);
+			$res = $client->sendAsync($guzzleRequest)->wait();
+			$body = $res->getBody()->getContents();
+			$data = json_decode($body, true);
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				return response()->json([
+					'error' => 'Invalid JSON from SSO',
+					'raw' => $body
+				], 502);
+			}
+			// Cek user di tabel users by pengguna_email dari respon SSO
+			$pengguna_email = $data['pengguna_email'] ?? null;
+			$user = $pengguna_email ? Users::where('email', $pengguna_email)->first() : null;
+			$logged_in = (bool) $user;
+			$response_data = array_merge($data, [
+				'logged_in' => $logged_in,
+			]);
+			if ($logged_in) {
+				$token = $this->generateUserToken($user);
+				$cookie = cookie(
+					'access_token',
+					$token,
+					config('auth.jwt_duration'),
+					'/',
+					null,
+					false,
+					true,
+					false,
+					'lax'
+				);
+				$response_data['token'] = $token;
+				$response_data['user'] = [
+					'id' => $user->user_id,
+					'username' => $user->username,
+					'email' => $user->email,
+					'name' => $user->name_info ?? $user->username,
+				];
+				return response()->json($response_data, 200)->cookie($cookie);
+			}
+			return response()->json($response_data);
+		} catch (\GuzzleHttp\Exception\RequestException $e) {
+			$status = $e->hasResponse() ? $e->getResponse()->getStatusCode() : 502;
+			$body = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+			$data = json_decode($body, true);
+			return response()->json($data ?? ['error' => $body], $status);
+		} catch (Exception $e) {
+			return response()->json([
+				'error' => $e->getMessage()
 			], 500);
 		}
 	}
