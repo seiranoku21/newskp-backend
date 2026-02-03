@@ -19,8 +19,10 @@ class JWTAuthentication
      */
     public function handle(Request $request, Closure $next)
     {
-        // Skip JWT check for public routes (sso_untirta_login receives SSO token via query/body/header)
+        // Skip JWT check for public routes (login, logout, sso_untirta_login, dll.)
         $publicRoutes = [
+            'api/auth/login',
+            'api/auth/logout',
             'api/auth/sso_untirta_login',
             'api/auth/*',
             'api/login',
