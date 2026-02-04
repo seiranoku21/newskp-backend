@@ -161,15 +161,22 @@ class AglobalController extends Controller
         // Untuk setiap portofolio, ambil detail_rubrik_kinerja dari rencana_hasil_kerja_atasan
         $result = [];
         foreach ($portofolios as $item) {
+            // Hitung per portofolio (item->uid) agar tetap akurat saat filter nip/uid/email
+            $jml_rubrik = DB::table('rencana_hasil_kerja_atasan')->where('portofolio_kinerja_uid', $item->uid)->count();
+            $jml_rubrik_kegiatan = DB::table('rencana_hasil_kerja_item')->where('portofolio_kinerja_uid', $item->uid)->count();
+            $jml_aktifitas = DB::table('aktifitas_kinerja')->where('portofolio_kinerja_uid', $item->uid)->count();
+
             $detail_rubrik_kinerja = DB::table('rencana_hasil_kerja_atasan')
                 ->select('id','rubrik_kinerja', 'kategori')
                 ->where('portofolio_kinerja_uid', $item->uid)
                 ->get()
                 ->map(function($row){
+                    $jml_kegiatan = DB::table('rencana_hasil_kerja_item')->where('rhka_id', $row->id)->count();
                     return [
                         'id' => $row->id,
                         'rubrik_kinerja' => $row->rubrik_kinerja,
                         'kategori' => $row->kategori,
+                        'jml_kegiatan' => $jml_kegiatan,
                         'detail_kegiatan' => DB::table('rencana_hasil_kerja_item')
                             ->where('rhka_id', $row->id)
                             ->select('id AS rhki_id',
@@ -208,7 +215,11 @@ class AglobalController extends Controller
                 "pangkat_id" => $item->pangkat_id,
                 "status_kerja" => $item->status_kerja,
                 "level_pegawai" => $item->level_pegawai,
-                "detail_rubrik_kinerja" => $detail_rubrik_kinerja
+                "jml_rubrik" => $jml_rubrik,
+                "jml_rubrik_kegiatan" => $jml_rubrik_kegiatan,      
+                "jml_aktifitas" => $jml_aktifitas,
+                "detail_rubrik_kinerja" => $detail_rubrik_kinerja,
+                
             ];
         }
 
