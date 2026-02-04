@@ -1103,4 +1103,17 @@ class LapController extends Controller
         }
     }
 
+    public function dashboard_skp(Request $request){
+        $email = $request->email;
+        $jml_portofolio = \DB::table('portofolio_kinerja')->where('email', $email)->count();
+        $jml_ajuan_skp = \DB::table('skp_kontrak')->where('pegawai_email', $email)->count();
+        return response()->json([
+            "success" => true,
+            "data" => [
+                "jml_portofolio" => $jml_portofolio,
+                "jml_ajuan_skp" => $jml_ajuan_skp
+            ]
+        ]);
+    }
+
 }

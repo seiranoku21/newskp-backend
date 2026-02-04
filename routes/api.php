@@ -113,6 +113,9 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---INTEGRASI START
 
+    // ---DASHBOARD
+    Route::get('dashboard', 'LapController@dashboard_skp');
+
     // ---PORTOFOLIO KINERJA---
     Route::get('portofolio', 'AglobalController@get_portofolio'); 
     Route::post('portofolio/add', 'PortofolioKinerjaController@add');	
