@@ -163,6 +163,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // JWT-protected routes (uses global JWTAuthentication middleware from api group)
     Route::get('account/currentuserdata', 'AccountController@currentuserdata');
+    Route::post('account/change-password', 'AccountController@changePassword');
 
     // Move all the routes previously inside the api.key middleware group
     Route::get('home', 'HomeController@index');

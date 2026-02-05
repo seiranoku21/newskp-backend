@@ -220,6 +220,33 @@ class AccountController extends Controller{
 	// 	return $this->respond($data_spl);
 	// }
 
+    /**
+     * Change password for current user
+     * Endpoint: POST /api/account/change-password
+     * Requires: new_password, new_password_confirmation (user must be authenticated via JWT)
+     */
+    function changePassword(Request $request) {
+        $request->validate([
+            'new_password' => 'required|string|min:6|confirmed',
+        ], [
+            'new_password.required' => 'Password baru harus diisi.',
+            'new_password.min' => 'Password baru minimal 6 karakter.',
+            'new_password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        $user = auth()->user();
+        
+        // For SSO users (google), reject - they use Google for auth
+        if ($user->auth_provider === 'google' || $user->auth_provider === 'sso') {
+            return response()->json(['message' => 'Akun Anda menggunakan login Google SSO. Silakan gunakan pengaturan akun Google untuk mengubah kata sandi.'], 400);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return $this->respond(['message' => 'Password berhasil diubah.']);
+    }
+
     // Get Photo from Sikita API
     function get_photo(Request $request) {
         $email = $request->email;
