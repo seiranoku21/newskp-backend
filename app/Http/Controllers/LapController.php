@@ -1107,11 +1107,87 @@ class LapController extends Controller
         $email = $request->email;
         $jml_portofolio = \DB::table('portofolio_kinerja')->where('email', $email)->count();
         $jml_ajuan_skp = \DB::table('skp_kontrak')->where('pegawai_email', $email)->count();
+        $jml_aktifitas = \DB::table('aktifitas_kinerja')->where('email', $email)->count();
+
+        // Portofolio Kinerja
+        $data_portofolio = \DB::table('portofolio_kinerja')
+                            ->select('id', 'uid', 'tahun', 'jabatan', 'unit_kerja')
+                            ->where('email', $email)
+                            ->get()
+                            ->map(function($item){
+                                $jml_rubrik = \DB::table('rencana_hasil_kerja_atasan')->where('portofolio_kinerja_uid', $item->uid)->count();
+                                $jml_rubrik_kegiatan = \DB::table('rencana_hasil_kerja_item')->where('portofolio_kinerja_uid', $item->uid)->count();
+                                $jml_aktifitas = \DB::table('aktifitas_kinerja')->where('portofolio_kinerja_uid', $item->uid)->count();
+                                return [
+                                    "id" => $item->id,
+                                    "tahun" => $item->tahun,
+                                    "jabatan" => $item->jabatan,
+                                    "unit_kerja" => $item->unit_kerja,
+                                    "jml_rubrik" => $jml_rubrik,
+                                    "jml_kegiatan" => $jml_rubrik_kegiatan,
+                                    "jml_aktifitas" => $jml_aktifitas,
+                                ];
+                            })->toArray();
+
+        // Ajuan SKP per tahun
+        $ajuan_per_tahun = \DB::table('skp_kontrak')
+            ->select('tahun')
+            ->where('pegawai_email', $email)
+            ->groupBy('tahun')
+            ->orderBy('tahun', 'desc')
+            ->get()
+            ->map(function($item) use ($email) {
+                $tahun = $item->tahun;
+                $jml_ajuan_dinilai = \DB::table('skp_kontrak')
+                    ->where('status_vrf_id', '3')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                $jml_ajuan_blm_dinilai = \DB::table('skp_kontrak')
+                    ->where('status_vrf_id', '1')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                $jml_predikat_sangat_baik = \DB::table('skp_kontrak')
+                    ->where('predikat_kinerja', 'SANGAT BAIK')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                $jml_predikat_baik = \DB::table('skp_kontrak')
+                    ->where('predikat_kinerja', 'BAIK')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                $jml_predikat_butuh_perbaikan = \DB::table('skp_kontrak')
+                    ->where('predikat_kinerja', 'BUTUH PERBAIKAN')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                $jml_predikat_kurang = \DB::table('skp_kontrak')
+                    ->where('predikat_kinerja', 'KURANG')
+                    ->where('pegawai_email', $email)
+                    ->where('tahun', $tahun)
+                    ->count();
+                return [
+                    "tahun" => $tahun,
+                    "jml_ajuan_dinilai" => $jml_ajuan_dinilai,
+                    "jml_ajuan_blm_dinilai" => $jml_ajuan_blm_dinilai,
+                    "jml_sangat_baik" => $jml_predikat_sangat_baik,
+                    "jml_baik" => $jml_predikat_baik,
+                    "jml_butuh_perbaikan" => $jml_predikat_butuh_perbaikan,
+                    "jml_kurang" => $jml_predikat_kurang,
+                ];
+            })->values();
+        $data_ajuan_skp = $ajuan_per_tahun;
+
         return response()->json([
             "success" => true,
             "data" => [
                 "jml_portofolio" => $jml_portofolio,
-                "jml_ajuan_skp" => $jml_ajuan_skp
+                "jml_ajuan_skp" => $jml_ajuan_skp,
+                "jml_aktifitas" => $jml_aktifitas,
+                "data_portofolio" => $data_portofolio,
+                "data_ajuan_skp" => $data_ajuan_skp
             ]
         ]);
     }
