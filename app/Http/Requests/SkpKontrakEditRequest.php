@@ -33,7 +33,7 @@ class SkpKontrakEditRequest extends FormRequest
 				"penilai_nip" => "filled|string",
 				"penilai_email" => "nullable|email",
 				"penilai_nama" => "nullable|string",
-				"penilai_pangkat_id" => "nullable|numeric",
+				"penilai_pangkat_id" => "nullable|string",
 				"penilai_pangkat" => "nullable|string",
 				"penilai_jabatan_id" => "nullable|numeric",
 				"penilai_jabatan" => "nullable|string",
