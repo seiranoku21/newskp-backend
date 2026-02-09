@@ -590,7 +590,8 @@ class SimpegController extends Controller
 
     // ---INTEGRASI SIREMUN
     function rmn_pegawai(Request $request){
-        $nip = $request->nip;
+        $nip = $request->query('nip') ?? $request->nip;
+        $enrichSingle = !empty($nip); // hanya enrich (pangkat, riwayat_jabatan) saat request 1 NIP agar tidak timeout
 
         try {
             $response = Http::withHeaders([
@@ -598,7 +599,7 @@ class SimpegController extends Controller
                 'Content-Type' => 'application/json',
                 'Connection' => 'Keep-Alive',
                 'Accept' => 'application/json'
-            ])->timeout(30)->get('https://simpeg.untirta.ac.id/berbagidata/all-pegawai2', [
+            ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/all-pegawai2', [
                 'nip' => $nip
             ]);
 
@@ -611,8 +612,16 @@ class SimpegController extends Controller
                     $data = [$responseData['data']];
                 }
 
-                // Fetch pangkat_id from the external API for each nip found
-                $data = array_map(function($item){
+                // Pagination opsional saat ambil semua data (tanpa nip)
+                $total = count($data);
+                $page = max(1, (int) ($request->query('page') ?? 1));
+                $perPage = min(500, max(1, (int) ($request->query('per_page') ?? 500)));
+                if (!$enrichSingle && $total > $perPage) {
+                    $data = array_slice($data, ($page - 1) * $perPage, $perPage);
+                }
+
+                // Fetch pangkat_id & riwayat_jabatan hanya saat request 1 NIP (enrichSingle); untuk semua pegawai di-skip agar tidak timeout
+                $data = array_map(function($item) use ($enrichSingle){
                     $gelarDepan = isset($item['gelarDepan']) && $item['gelarDepan'] ? trim($item['gelarDepan']) : '';
                     $nama = isset($item['namaPegawai']) ? trim($item['namaPegawai']) : '';
                     $gelarBelakang = isset($item['gelarBelakang']) && $item['gelarBelakang'] ? trim($item['gelarBelakang']) : '';
@@ -686,11 +695,11 @@ class SimpegController extends Controller
 
 
 
-                    // Fetch pangkat_id dari endpoint pegawai?nip=
+                    // Fetch pangkat_id dari endpoint pegawai?nip= (hanya saat request 1 NIP, hindari timeout saat ambil semua)
                     $nipValue = $item['nip'] ?? null;
                     $pangkat_id = null;
                     $pangkat = null;
-                    if ($nipValue) {
+                    if ($enrichSingle && $nipValue) {
                         try {
                             $pangkatResponse = Http::withHeaders([
                                 'simpeg2023' => 'Springu2023',
@@ -724,12 +733,12 @@ class SimpegController extends Controller
                         }
                     }
 
-                    // Fetch kat_jabatan, id_kat_jabatan, no_sk, tgl_sk dari riwayat_jabatan (filter status = 1)
+                    // Fetch kat_jabatan, id_kat_jabatan, no_sk, tgl_sk dari riwayat_jabatan (hanya saat request 1 NIP)
                     $kat_jabatan = null;
                     $id_kat_jabatan = null;
                     $no_sk = null;
                     $tgl_sk = null;
-                    if ($nipValue) {
+                    if ($enrichSingle && $nipValue) {
                         try {
                             $riwayatJabatanResponse = Http::withHeaders([
                                 'simpeg2023' => 'Springu2023',
@@ -804,10 +813,16 @@ class SimpegController extends Controller
                     ];
                 }, $data);
 
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $data
-                ], 200);
+                $payload = ['status' => 'success', 'data' => $data];
+                if (!$enrichSingle && $total > 0) {
+                    $payload['meta'] = [
+                        'total' => $total,
+                        'page' => $page,
+                        'per_page' => $perPage,
+                        'last_page' => (int) ceil($total / $perPage),
+                    ];
+                }
+                return response()->json($payload, 200);
             } else {
                 return response()->json([
                     'status' => 'error',
