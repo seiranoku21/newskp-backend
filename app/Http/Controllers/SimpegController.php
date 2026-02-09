@@ -848,7 +848,7 @@ class SimpegController extends Controller
                 'Content-Type' => 'application/json',
                 'Connection' => 'Keep-Alive',
                 'Accept' => 'application/json'
-            ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/rmn_rwy_jabatan', [
+            ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_jabatan', [
                 'nip' => $nip
             ]);
 
@@ -856,9 +856,43 @@ class SimpegController extends Controller
                 $responseData = $response->json();
                 $data = [];
                 if (isset($responseData['data']) && is_array($responseData['data'])) {
-                    $data = $responseData['data'];
+                    foreach ($responseData['data'] as $item) {
+                        $data[] = [
+                            'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
+                            'id_jabatan' => $item['jabatan_id'] ?? null,
+                            'id_pegawai' => $item['kodeData'] ?? null,
+                            'nip' => $item['nip'] ?? null,
+                            'id_unit' => $item['unitKerja_id'] ?? null,
+                            'tmt_sk' => $item['tglSk'] ?? null,
+                            'tst_sk' => $item['tglSelesai'] ?? null,
+                            'tgl_mulai' => $item['tglSk'] ?? null,
+                            'tgl_selesai' => $item['tglSelesai'] ?? null,
+                            'tgl_sk' => $item['tglSk'] ?? null,
+                            'no_sk' => $item['skJabatan'] ?? null,
+                            'is_active' => $item['status'] ?? null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                            'deleted_at' => null,
+                        ];
+                    }
                 } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
-                    $data = [$responseData['data']];
+                    $item = $responseData['data'];
+                    $data[] = [
+                        'id_riwayat_jabatan ' => $item['kodeRiwayatJabatan'] ?? null,
+                        'id_pegawai' => $item['kodeData'] ?? null,
+                        'nip' => $item['nip'] ?? null,
+                        'id_unit' => $item['unitKerja_id'] ?? null,
+                        'tmt_sk' => $item['tglSk'] ?? null,
+                        'tst_sk' => $item['tglSelesai'] ?? null,
+                        'tgl_mulai' => $item['tglSk'] ?? null,
+                        'tgl_selesai' => $item['tglSelesai'] ?? null,
+                        'tgl_sk' => $item['tglSk'] ?? null,
+                        'no_sk' => $item['skJabatan'] ?? null,
+                        'is_active' => $item['status'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'deleted_at' => null,
+                    ];
                 }
 
                 return response()->json([
