@@ -161,7 +161,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---SIREMUN
     Route::get('rmn_pegawai', 'SimpegController@rmn_pegawai');
-
+    Route::get('rmn_rwy_jabatan', 'SimpegController@rmn_rwy_jabatan');
 
     // ---END INTEGRASI
 
