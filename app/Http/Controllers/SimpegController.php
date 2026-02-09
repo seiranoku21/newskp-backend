@@ -815,7 +815,7 @@ class SimpegController extends Controller
 
                 $payload = ['status' => 'success', 'data' => $data];
                 if (!$enrichSingle && $total > 0) {
-                    $payload['meta'] = [
+                    $payload['pagination'] = [
                         'total' => $total,
                         'page' => $page,
                         'per_page' => $perPage,
