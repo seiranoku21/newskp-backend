@@ -689,7 +689,7 @@ class SimpegController extends Controller
                         // Honorer, Non BLU, Outsourcing
                         ($jenisPegawai == 'Dosen' || $jenisPegawai == 'Dosen DT') && in_array($kategoriPegawai, ['Honorer', 'Non BLU', 'Outsourcing']) => 'e54422ab-0c17-439a-b2ad-9fa894739cb2',
                         $jenisPegawai == 'Tenaga Kependidikan' && in_array($kategoriPegawai, ['Honorer', 'Non BLU', 'Outsourcing']) => '9a0bcb50-4ab5-4115-9b8d-b92e6386cfd5',
-                       
+                        
                         default => null,
                     };
 
@@ -838,5 +838,48 @@ class SimpegController extends Controller
             ], 500);
         }
     }
+
+    function rmn_rwy_jabatan(Request $request){
+        $nip = $request->query('nip') ?? $request->nip;
+
+        try {
+            $response = Http::withHeaders([
+                'simpeg2023' => 'Springu2023',
+                'Content-Type' => 'application/json',
+                'Connection' => 'Keep-Alive',
+                'Accept' => 'application/json'
+            ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/rmn_rwy_jabatan', [
+                'nip' => $nip
+            ]);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $data = [];
+                if (isset($responseData['data']) && is_array($responseData['data'])) {
+                    $data = $responseData['data'];
+                } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
+                    $data = [$responseData['data']];
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $data
+                ], 200);        
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Failed to fetch data',
+                    'data' => []
+                ], $response->status());
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Request failed: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
 
 }
