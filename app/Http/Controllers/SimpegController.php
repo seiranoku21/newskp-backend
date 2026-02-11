@@ -682,6 +682,8 @@ function rmn_pegawai(Request $request){
                     // PPPK
                     ($jenisPegawai == 'Dosen' || $jenisPegawai == 'Dosen DT') && $kategoriPegawai == 'PPPK' => '99ff2746-4a48-4712-9092-ace854d8ace2',
                     $jenisPegawai == 'Tenaga Kependidikan' && $kategoriPegawai == 'PPPK' => '99ff276f-e223-4de1-959b-0c296723bb32',
+                    // PPPK Paruh Waktu
+                    $jenisPegawai == 'Tenaga Kependidikan' && $kategoriPegawai == 'PPPK Paruh Waktu' => '99ff276f-e223-4de1-959b-0c296723bb33',
                     // PKWT
                     ($jenisPegawai == 'Dosen' || $jenisPegawai == 'Dosen DT') && $kategoriPegawai == 'PKWT' => '8210d999-c11d-4c5d-bac7-5574d03ce5ed',
                     $jenisPegawai == 'Tenaga Kependidikan' && $kategoriPegawai == 'PKWT' => 'd3dff2c5-1353-4c01-8d50-95eb3df963d5',
