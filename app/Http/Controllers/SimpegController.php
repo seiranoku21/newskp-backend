@@ -613,16 +613,21 @@ function rmn_pegawai(Request $request){
                 $pool->withHeaders($httpHeaders)->timeout(25)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_jabatan', ['nip' => $nip]),
             ]);
 
-            $pegawaiData = $responses[0]->successful() ? $responses[0]->json() : null;
+            $r0 = $responses[0];
+            $r1 = $responses[1];
+            $pegawaiOk = ($r0 instanceof \Illuminate\Http\Client\Response) && $r0->successful();
+            $pegawaiData = $pegawaiOk ? $r0->json() : null;
             if ($pegawaiData && isset($pegawaiData['data'])) {
                 $raw = $pegawaiData['data'];
                 $data = (is_array($raw) && isset($raw[0])) ? $raw : [$raw];
             } else {
-                return response()->json(['status' => 'error', 'message' => 'Pegawai tidak ditemukan atau gagal fetch dari SIMPEG', 'data' => []], 404);
+                $msg = ($r0 instanceof \Throwable) ? 'SIMPEG unreachable: ' . $r0->getMessage() : 'Pegawai tidak ditemukan atau gagal fetch dari SIMPEG';
+                return response()->json(['status' => 'error', 'message' => $msg, 'data' => []], 502);
             }
 
-            if ($enrichSingle && $responses[1]->successful()) {
-                $riwayatData = $responses[1]->json();
+            $riwayatOk = ($r1 instanceof \Illuminate\Http\Client\Response) && $r1->successful();
+            if ($enrichSingle && $riwayatOk) {
+                $riwayatData = $r1->json();
                 $items = $riwayatData['data'] ?? [];
                 $items = is_array($items) ? $items : ($items ? [$items] : []);
                 $kat_jabatan = $id_kat_jabatan = $no_sk = $tgl_sk = null;
