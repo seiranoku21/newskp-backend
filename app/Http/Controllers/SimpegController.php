@@ -592,102 +592,77 @@ function rmn_pegawai(Request $request){
     $nip = $request->query('nip') ?? $request->nip;
     $enrichParam = $request->query('enrich');
     $skipEnrich = in_array($enrichParam, ['0', 'false', 'no'], true);
-    $enrichSingle = !empty($nip) && !$skipEnrich; // hanya enrich (pangkat, riwayat_jabatan) saat request 1 NIP agar tidak timeout; ?enrich=0 skip enrichment untuk response lebih cepat
+    $enrichSingle = !empty($nip) && !$skipEnrich;
+
+    $httpHeaders = [
+        'simpeg2023' => 'Springu2023',
+        'Content-Type' => 'application/json',
+        'Connection' => 'Keep-Alive',
+        'Accept' => 'application/json'
+    ];
 
     try {
-        $response = Http::withHeaders([
-            'simpeg2023' => 'Springu2023',
-            'Content-Type' => 'application/json',
-            'Connection' => 'Keep-Alive',
-            'Accept' => 'application/json'
-        ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/all-pegawai2', [
-            'nip' => $nip
-        ]);
+        $data = [];
+        $enrichLookup = [];
 
-        if ($response->successful()) {
+        if (!empty($nip)) {
+            // FAST PATH: Request dengan NIP - gunakan pegawai + riwayat_jabatan PARALEL saja (2 call, ~25s max)
+            // Hindari all-pegawai2 yang sangat lambat di production dan menyebabkan 504
+            $responses = Http::pool(fn ($pool) => [
+                $pool->withHeaders($httpHeaders)->timeout(25)->get('https://simpeg.untirta.ac.id/berbagidata/pegawai', ['nip' => $nip]),
+                $pool->withHeaders($httpHeaders)->timeout(25)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_jabatan', ['nip' => $nip]),
+            ]);
+
+            $pegawaiData = $responses[0]->successful() ? $responses[0]->json() : null;
+            if ($pegawaiData && isset($pegawaiData['data'])) {
+                $raw = $pegawaiData['data'];
+                $data = (is_array($raw) && isset($raw[0])) ? $raw : [$raw];
+            } else {
+                return response()->json(['status' => 'error', 'message' => 'Pegawai tidak ditemukan atau gagal fetch dari SIMPEG', 'data' => []], 404);
+            }
+
+            if ($enrichSingle && $responses[1]->successful()) {
+                $riwayatData = $responses[1]->json();
+                $items = $riwayatData['data'] ?? [];
+                $items = is_array($items) ? $items : ($items ? [$items] : []);
+                $kat_jabatan = $id_kat_jabatan = $no_sk = $tgl_sk = null;
+                foreach ($items as $rj) {
+                    if ((string)($rj['status'] ?? '') === '1') {
+                        $kat_jabatan = $rj['katJabatan'] ?? null;
+                        $id_kat_jabatan = $rj['katJabatan_id'] ?? null;
+                        $no_sk = $rj['skJabatan'] ?? null;
+                        $tgl_sk = $rj['tglSk'] ?? null;
+                        break;
+                    }
+                }
+                $nipVal = $data[0]['nip'] ?? $nip;
+                $pangkatData = $data[0] ?? [];
+                $pangkat_id = $pangkatData['pangkat_id'] ?? null;
+                $pangkat = $pangkatData['pangkat'] ?? null;
+                $enrichLookup[$nipVal] = compact('pangkat_id', 'pangkat', 'kat_jabatan', 'id_kat_jabatan', 'no_sk', 'tgl_sk');
+            }
+        } else {
+            // Tanpa NIP: ambil semua pegawai dari all-pegawai2 (tanpa enrich untuk hindari timeout)
+            $response = Http::withHeaders($httpHeaders)->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/all-pegawai2', ['nip' => $nip]);
+            if (!$response->successful()) {
+                return response()->json(['status' => 'error', 'message' => 'Failed to fetch data', 'data' => []], $response->status());
+            }
             $responseData = $response->json();
-            $data = [];
             if (isset($responseData['data']) && is_array($responseData['data'])) {
                 $data = $responseData['data'];
             } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
                 $data = [$responseData['data']];
             }
-
-            // Pagination opsional saat ambil semua data (tanpa nip)
             $total = count($data);
             $page = max(1, (int) ($request->query('page') ?? 1));
             $perPage = min(500, max(1, (int) ($request->query('per_page') ?? 500)));
-            if (!$enrichSingle && $total > $perPage) {
+            if ($total > $perPage) {
                 $data = array_slice($data, ($page - 1) * $perPage, $perPage);
             }
+        }
 
-            // Pre-fetch pangkat & riwayat_jabatan SECARA PARALEL (Http::pool) saat request 1 NIP - menghemat ~20 detik vs sequential
-            $enrichLookup = [];
-            if ($enrichSingle && !empty($data)) {
-                $nipToEnrich = $data[0]['nip'] ?? null;
-                if ($nipToEnrich) {
-                    try {
-                        $responses = Http::pool(fn ($pool) => [
-                            $pool->withHeaders([
-                                'simpeg2023' => 'Springu2023',
-                                'Content-Type' => 'application/json',
-                                'Connection' => 'Keep-Alive',
-                                'Accept' => 'application/json'
-                            ])->timeout(20)->get('https://simpeg.untirta.ac.id/berbagidata/pegawai', ['nip' => $nipToEnrich]),
-                            $pool->withHeaders([
-                                'simpeg2023' => 'Springu2023',
-                                'Content-Type' => 'application/json',
-                                'Connection' => 'Keep-Alive',
-                                'Accept' => 'application/json'
-                            ])->timeout(20)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_jabatan', ['nip' => $nipToEnrich]),
-                        ]);
-                        $pangkat_id = null;
-                        $pangkat = null;
-                        if ($responses[0]->successful()) {
-                            $pangkatData = $responses[0]->json();
-                            if (isset($pangkatData['data']['pangkat_id'])) {
-                                $pangkat_id = $pangkatData['data']['pangkat_id'];
-                            } elseif (isset($pangkatData['data'][0]['pangkat_id'])) {
-                                $pangkat_id = $pangkatData['data'][0]['pangkat_id'];
-                            }
-                            if (isset($pangkatData['data']['pangkat'])) {
-                                $pangkat = $pangkatData['data']['pangkat'];
-                            } elseif (isset($pangkatData['data'][0]['pangkat'])) {
-                                $pangkat = $pangkatData['data'][0]['pangkat'];
-                            }
-                        }
-                        $kat_jabatan = null;
-                        $id_kat_jabatan = null;
-                        $no_sk = null;
-                        $tgl_sk = null;
-                        if ($responses[1]->successful()) {
-                            $riwayatData = $responses[1]->json();
-                            $items = $riwayatData['data'] ?? [];
-                            if (!is_array($items)) {
-                                $items = $items ? [$items] : [];
-                            }
-                            foreach ($items as $rj) {
-                                $sts = $rj['status'] ?? null;
-                                if ((string)$sts === '1') {
-                                    $kat_jabatan = $rj['katJabatan'] ?? null;
-                                    $id_kat_jabatan = $rj['katJabatan_id'] ?? null;
-                                    $no_sk = $rj['skJabatan'] ?? null;
-                                    $tgl_sk = $rj['tglSk'] ?? null;
-                                    break;
-                                }
-                            }
-                        }
-                        $enrichLookup[$nipToEnrich] = compact('pangkat_id', 'pangkat', 'kat_jabatan', 'id_kat_jabatan', 'no_sk', 'tgl_sk');
-                    } catch (\Exception $e) {
-                        $enrichLookup[$nipToEnrich] = [
-                            'pangkat_id' => null, 'pangkat' => null,
-                            'kat_jabatan' => null, 'id_kat_jabatan' => null, 'no_sk' => null, 'tgl_sk' => null,
-                        ];
-                    }
-                }
-            }
-
-            // Fetch pangkat_id & riwayat_jabatan hanya saat request 1 NIP (enrichSingle); untuk semua pegawai di-skip agar tidak timeout
+        if (!empty($data)) {
+            $total = !empty($nip) ? count($data) : $total;
             $data = array_map(function($item) use ($enrichSingle, $enrichLookup){
                 $gelarDepan = isset($item['gelarDepan']) && $item['gelarDepan'] ? trim($item['gelarDepan']) : '';
                 $nama = isset($item['namaPegawai']) ? trim($item['namaPegawai']) : '';
@@ -764,7 +739,7 @@ function rmn_pegawai(Request $request){
 
 
 
-                // Gunakan data dari pre-fetch (Http::pool) - tidak ada HTTP call di dalam loop
+                // Gunakan data dari pre-fetch atau dari item (pegawai response bisa sudah punya pangkat)
                 $nipValue = $item['nip'] ?? null;
                 $pangkat_id = null;
                 $pangkat = null;
@@ -780,6 +755,9 @@ function rmn_pegawai(Request $request){
                     $id_kat_jabatan = $e['id_kat_jabatan'] ?? null;
                     $no_sk = $e['no_sk'] ?? null;
                     $tgl_sk = $e['tgl_sk'] ?? null;
+                } elseif (!empty($nipValue)) {
+                    $pangkat_id = $item['pangkat_id'] ?? null;
+                    $pangkat = $item['pangkat'] ?? null;
                 }
 
                 return [
@@ -822,13 +800,19 @@ function rmn_pegawai(Request $request){
             }, $data);
 
             $payload = ['status' => 'success', 'data' => $data];
-            if (!$enrichSingle && $total > 0) {
-                $payload['pagination'] = [
-                    'total' => $total,
-                    'page' => $page,
-                    'per_page' => $perPage,
-                    'last_page' => (int) ceil($total / $perPage),
-                ];
+            if (!empty($nip)) {
+                // Single NIP - no pagination
+            } else {
+                $page = max(1, (int) ($request->query('page') ?? 1));
+                $perPage = min(500, max(1, (int) ($request->query('per_page') ?? 500)));
+                if ($total > 0) {
+                    $payload['pagination'] = [
+                        'total' => $total,
+                        'page' => $page,
+                        'per_page' => $perPage,
+                        'last_page' => (int) ceil($total / $perPage),
+                    ];
+                }
             }
             return response()->json($payload, 200);
         } else {
@@ -836,7 +820,7 @@ function rmn_pegawai(Request $request){
                 'status' => 'error',
                 'message' => 'Failed to fetch data',
                 'data' => []
-            ], $response->status());
+            ], 500);
         }
     } catch (\Exception $e) {
         return response()->json([
