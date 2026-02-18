@@ -364,6 +364,10 @@ class AglobalController extends Controller
                         'b.realisasi'
             );
             $query->where('a.nip', $nip);
+
+            if (!empty($request->portofolio_uid)) {
+                $query->where('a.portofolio_kinerja_uid', $request->portofolio_uid);
+            }
             
             if($request->has('tanggal_mulai') && $request->has('tanggal_selesai')){
                 $tanggal_mulai = $request->tanggal_mulai;
