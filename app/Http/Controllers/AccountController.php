@@ -85,8 +85,9 @@ class AccountController extends Controller{
 			$unit_kerja = $pegawai->nm_unit ?? null;
 			$foto = $pegawai->foto ?? null;
 
-			// If $foto is null or empty, set with default url
-			if (empty($foto)) {
+			if (!empty($foto)) {
+				$foto = "https://simpeg.untirta.ac.id/simpeg_api/assets/img/pegawai/{$foto}";
+			} else {
 				$foto = "https://github.com/seiranoku/ukonstyles/blob/main/images/nouser.png";
 			}
 			// Get portofolio list using NIP from pegawai table
@@ -96,9 +97,7 @@ class AccountController extends Controller{
 				->get();
 		} else {
 			// If $foto is null or empty when no pegawai, set with default url
-			if (empty($foto)) {
-				$foto = "https://github.com/seiranoku/ukonstyles/blob/main/images/nouser.png";
-			}
+			$foto = "https://github.com/seiranoku/ukonstyles/blob/main/images/nouser.png";
 		}
 
 		// Prepare user data with photo
