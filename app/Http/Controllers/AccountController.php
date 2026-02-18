@@ -74,21 +74,31 @@ class AccountController extends Controller{
 		$jabatan_fungsional = null;
 		$unit_kerja = null;
 		$portofolio_list = null;
-
+		$foto = null;
 		// Only extract data if pegawai record exists
 		if ($pegawai) {
-			$id_pegawai = $pegawai->id_pegawai;
-			$nip = $pegawai->nip;
-			$nama_gelar = $pegawai->nama_gelar;
-			$jabatan_struktural = $pegawai->jabatan_struktural;
-			$jabatan_fungsional = $pegawai->jabatan_fungsional;
-			$unit_kerja = $pegawai->nm_unit;
+			$id_pegawai = $pegawai->id_pegawai ?? null;
+			$nip = $pegawai->nip ?? null;
+			$nama_gelar = $pegawai->nama_gelar ?? null;
+			$jabatan_struktural = $pegawai->jabatan_struktural ?? null;
+			$jabatan_fungsional = $pegawai->jabatan_fungsional ?? null;
+			$unit_kerja = $pegawai->nm_unit ?? null;
+			$foto = $pegawai->foto ?? null;
 
+			// If $foto is null or empty, set with default url
+			if (empty($foto)) {
+				$foto = "https://github.com/seiranoku/ukonstyles/blob/main/images/nouser.png";
+			}
 			// Get portofolio list using NIP from pegawai table
 			$portofolio_list = DB::table('portofolio_kinerja')
 				->select('id', 'uid', DB::raw("CONCAT('[ ', id, '-', SUBSTRING(uid, 1, 4), ' ] - ', jabatan) as no_poki"),'nip', 'email', 'nama','tahun')
 				->where('nip', $nip)
 				->get();
+		} else {
+			// If $foto is null or empty when no pegawai, set with default url
+			if (empty($foto)) {
+				$foto = "https://github.com/seiranoku/ukonstyles/blob/main/images/nouser.png";
+			}
 		}
 
 		// Prepare user data with photo
@@ -98,7 +108,7 @@ class AccountController extends Controller{
 			"username" => $user->username,
 			"email" => $user->email,
 			"name" => $user->name_info,
-			"picture" => $user->photo,
+			"picture" => $foto,
 			"nip" => $nip,
 			"nama_gelar" => $nama_gelar,
 			"jabatan_struktural" => $jabatan_struktural,
