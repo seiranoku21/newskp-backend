@@ -290,31 +290,31 @@ class AglobalController extends Controller
         $nip = $request->nip;
         $portofolio_uid = $request->portofolio_uid;
 
-        $query = DB::table('rencana_hasil_kerja_item')
-                ->select(
-                    'id as rhki_id',
-                    'kegiatan',
-                    'nip',
-                    'portofolio_kinerja_uid as portofolio_uid',
-                    'rhka_id',
-                    'ukuran_keberhasilan',
-                    'realisasi',
-                    'aspek_kualitas',
-                    'aspek_kuantitas',
-                    'aspek_waktu'
-                );
+        $query = DB::table('rencana_hasil_kerja_item as rhi')
+            ->leftJoin('rencana_hasil_kerja_atasan as rhka', 'rhi.rhka_id', '=', 'rhka.id')
+            ->select(
+                'rhi.id as rhki_id',
+                'rhi.kegiatan',
+                'rhi.nip',
+                'rhi.portofolio_kinerja_uid as portofolio_uid',
+                'rhi.rhka_id',
+                'rhka.rubrik_kinerja',
+                'rhi.ukuran_keberhasilan',
+                'rhi.realisasi',
+                'rhi.aspek_kualitas',
+                'rhi.aspek_kuantitas',
+                'rhi.aspek_waktu'       
+            );
         // Filter
         if (!empty($nip)) {
-             $query->where('nip', $nip);
+             $query->where('rhi.nip', $nip);
         }
         if (!empty($portofolio_uid)) {
-            $query->where('portofolio_kinerja_uid', $portofolio_uid);
+            $query->where('rhi.portofolio_kinerja_uid', $portofolio_uid);
         }
 
         $data = $query->get()->toArray();
-        return $data;
-        
-        
+        return $data;   
     }
 
     // ---RUBRIK KEGIATAN END
