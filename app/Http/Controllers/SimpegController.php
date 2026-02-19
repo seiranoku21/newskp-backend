@@ -919,5 +919,92 @@ function rmn_rwy_jabatan(Request $request){
     }
 }
 
+function rmn_rwy_studi(Request $request){
+    $nip = $request->query('nip') ?? $request->nip;
+
+    try {
+        $response = Http::withHeaders([
+            'simpeg2023' => 'Springu2023',
+            'Content-Type' => 'application/json',
+            'Connection' => 'Keep-Alive',
+            'Accept' => 'application/json'
+        ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_studi', [
+            'nip' => $nip
+        ]);
+
+        if ($response->successful()) {
+            $responseData = $response->json();
+            $data = [];
+            if (isset($responseData['data']) && is_array($responseData['data'])) {
+                foreach ($responseData['data'] as $item) {
+
+                    $aktif_studi = (isset($item['id_sts_studi']) && $item['id_sts_studi'] == '4') ? '1' : '0';
+                    $data[] = [
+                        'id_riwayat_studi' => $item['no'] ?? null,
+                        'id_pegawai' => $item['kd_pegawai'] ?? null,
+                        'nip' => $item['nip'] ?? null,
+                        'id_sts_studi' => $item['id_sts_studi'] ?? null,
+                        'label_sts_studi' => $item['label_sts_studi'] ?? null,
+                        'id_jns_studi' => $item['id_jenis_studi'] ?? null,
+                        'id_sumber_dana_studi' => null,
+                        'id_jenjang_pendidikan' => $item['id_pendidikan'] ?? null,
+                        'label_jenjang_pendidikan' => $item['label_pendidikan'] ?? null,
+                        'kode_negara' => null,
+                        'lokasi_lembaga' => $item['lokasi_lembaga'] ?? null,
+                        'nm_negara' => $item['nm_negara'] ?? null,
+                        'nm_lembaga' => $item['nm_lembaga'] ?? null,
+                        'nm_prodi' => $item['jurusan'] ?? null,
+                        'tgl_sk' => $item['tmt_mulai'] ?? null,
+                        'tgl_masuk' => $item['tglAktifDikampus'] ?? null,
+                        'tgl_lulus' => $item['tglSKTubelSelesai'] ?? null,
+                        'tmt_sk' => $item['tmt_mulai'] ?? null,
+                        'tst_sk' => $item['tmt_akhir'] ?? null,
+                        'no_sk' => $item['no_sk'] ?? null,
+                        'is_active' => $aktif_studi,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'deleted_at' => null,
+                    ];
+                }
+            } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
+                $item = $responseData['data'];
+                $data[] = [
+                    'id_riwayat_studi' => $item['kodeRiwayatStudi'] ?? null,
+                    'id_pegawai' => $item['kodeData'] ?? null,
+                    'nip' => $item['nip'] ?? null,
+                    'id_unit' => $item['unitKerja_id'] ?? null,
+                    'tmt_sk' => $item['tglSk'] ?? null,
+                    'tst_sk' => $item['tglSelesai'] ?? null,
+                    'tgl_mulai' => $item['tglSk'] ?? null,
+                    'tgl_selesai' => $item['tglSelesai'] ?? null,
+                    'tgl_sk' => $item['tglSk'] ?? null,
+                    'no_sk' => $item['skStudi'] ?? null,
+                    'is_active' => $item['status'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'deleted_at' => null,
+                ];
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ], 200);        
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch data',
+                'data' => []
+            ], $response->status());
+        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Request failed: ' . $e->getMessage(),
+            'data' => []
+        ], 500);
+    }
+}
+
 
 }
