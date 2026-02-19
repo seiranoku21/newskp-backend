@@ -939,6 +939,8 @@ function rmn_rwy_studi(Request $request){
                 foreach ($responseData['data'] as $item) {
 
                     $aktif_studi = (isset($item['id_sts_studi']) && $item['id_sts_studi'] == '4') ? '1' : '0';
+                    $ignore_remun = ($aktif_studi == '1') ? '1' : '0';
+
                     $data[] = [
                         'id_riwayat_studi' => $item['no'] ?? null,
                         'id_pegawai' => $item['kd_pegawai'] ?? null,
@@ -961,6 +963,7 @@ function rmn_rwy_studi(Request $request){
                         'tst_sk' => $item['tmt_akhir'] ?? null,
                         'no_sk' => $item['no_sk'] ?? null,
                         'is_active' => $aktif_studi,
+                        'ignore_remun' => $ignore_remun,
                         'created_at' => now(),
                         'updated_at' => now(),
                         'deleted_at' => null,
@@ -969,20 +972,31 @@ function rmn_rwy_studi(Request $request){
             } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
                 $item = $responseData['data'];
                 $data[] = [
-                    'id_riwayat_studi' => $item['kodeRiwayatStudi'] ?? null,
-                    'id_pegawai' => $item['kodeData'] ?? null,
-                    'nip' => $item['nip'] ?? null,
-                    'id_unit' => $item['unitKerja_id'] ?? null,
-                    'tmt_sk' => $item['tglSk'] ?? null,
-                    'tst_sk' => $item['tglSelesai'] ?? null,
-                    'tgl_mulai' => $item['tglSk'] ?? null,
-                    'tgl_selesai' => $item['tglSelesai'] ?? null,
-                    'tgl_sk' => $item['tglSk'] ?? null,
-                    'no_sk' => $item['skStudi'] ?? null,
-                    'is_active' => $item['status'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                    'deleted_at' => null,
+                    'id_riwayat_studi' => $item['no'] ?? null,
+                        'id_pegawai' => $item['kd_pegawai'] ?? null,
+                        'nip' => $item['nip'] ?? null,
+                        'id_sts_studi' => $item['id_sts_studi'] ?? null,
+                        'label_sts_studi' => $item['label_sts_studi'] ?? null,
+                        'id_jns_studi' => $item['id_jenis_studi'] ?? null,
+                        'id_sumber_dana_studi' => null,
+                        'id_jenjang_pendidikan' => $item['id_pendidikan'] ?? null,
+                        'label_jenjang_pendidikan' => $item['label_pendidikan'] ?? null,
+                        'kode_negara' => null,
+                        'lokasi_lembaga' => $item['lokasi_lembaga'] ?? null,
+                        'nm_negara' => $item['nm_negara'] ?? null,
+                        'nm_lembaga' => $item['nm_lembaga'] ?? null,
+                        'nm_prodi' => $item['jurusan'] ?? null,
+                        'tgl_sk' => $item['tmt_mulai'] ?? null,
+                        'tgl_masuk' => $item['tglAktifDikampus'] ?? null,
+                        'tgl_lulus' => $item['tglSKTubelSelesai'] ?? null,
+                        'tmt_sk' => $item['tmt_mulai'] ?? null,
+                        'tst_sk' => $item['tmt_akhir'] ?? null,
+                        'no_sk' => $item['no_sk'] ?? null,
+                        'is_active' => $aktif_studi,
+                        'ignore_remun' => $ignore_remun,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'deleted_at' => null,
                 ];
             }
 
