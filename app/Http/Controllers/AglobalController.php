@@ -658,11 +658,18 @@ class AglobalController extends Controller
         $periode_id = $request->periode_id;
         $status_id = $request->status_id;
 
+        $rate_sts = [
+            'AE' => 'DIATAS EKPEKTASI',
+            'SE' => 'SESUAI EKPEKTASI',
+            'BE' => 'DIBAWAH EKPEKTASI'
+        ];
+
         $data = DB::table('skp_kontrak as a')
                 ->leftJoin('portofolio_kinerja as b', 'a.portofolio_id', '=', 'b.id')
                 ->leftJoin('ref_skp_tipe as c', 'a.skp_tipe_id', '=', 'c.id')
                 ->leftJoin('ref_periode as d', 'a.periode_id', '=', 'd.id')
                 ->leftJoin('ref_status as e', 'a.status_id', '=', 'e.id')
+                ->leftJoin('ref_status_vrf as f', 'a.status_vrf_id', '=', 'f.id')
                 ->select('a.uid', 
                         'a.skp_tipe_id',
                         'a.periode_id',
@@ -682,8 +689,19 @@ class AglobalController extends Controller
                          'a.predikat_kinerja as predikat_kinerja',
                          'a.poin as poin',
                          'a.bobot_persen as bobot_persen',
-                         'a.penilai_nama as penilai_nama'
-                         )
+                         'a.penilai_nama as penilai_nama',
+                         DB::raw("CASE a.rating_hasil_kerja
+                            WHEN 'AE' THEN '{$rate_sts['AE']}'
+                            WHEN 'SE' THEN '{$rate_sts['SE']}'
+                            WHEN 'BE' THEN '{$rate_sts['BE']}'
+                            ELSE a.rating_hasil_kerja END as hasil_kerja"),
+                         DB::raw("CASE a.rating_perilaku_kerja
+                            WHEN 'AE' THEN '{$rate_sts['AE']}'
+                            WHEN 'SE' THEN '{$rate_sts['SE']}'
+                            WHEN 'BE' THEN '{$rate_sts['BE']}'
+                            ELSE a.rating_perilaku_kerja END as perilaku_kerja"),
+                         'f.status_vrf as status_vrf'
+                            )
                 ->where('a.penilai_nip', $nip_penilai)
                 ->where('a.tahun', $tahun)
                 ->where('a.skp_tipe_id', $skp_tipe_id)
