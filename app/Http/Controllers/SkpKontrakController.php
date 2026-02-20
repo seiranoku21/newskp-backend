@@ -108,6 +108,7 @@ class SkpKontrakController extends Controller
 		$portofolio_id	 = $request->portofolio_id;
 		$periode_id		 = $request->periode_id;
 		$penilai_nip	 = $request->penilai_nip;
+		$portofolio_uid = \DB::table('portofolio_kinerja')->where('id', $portofolio_id)->value('uid');
 
 		// Cek portofolio_id di tabel portofolio_kinerja
 		$portofolio_exists = \DB::table('portofolio_kinerja')->where('id', $portofolio_id)->exists();
@@ -197,6 +198,7 @@ class SkpKontrakController extends Controller
 		
 		$data = [
 			'portofolio_id' 		=> $portofolio_id,
+			'portofolio_uid' 		=> $portofolio_uid,
 			'uid'           		=> $uid,
 			'tahun'					=> $tahun,
 			'skp_tipe_id'   		=> $request->input('skp_tipe_id'),
