@@ -355,9 +355,20 @@ function spg_pegawai(Request $request){
                     'id_unit_simpeg'            => $item['kdUnitKerja'] ?? null,
                     'id_unit_sister'            => $item['idSDM'] ?? null,
                     'pangkat_id'                => $pangkat_id,
-                    'pangkat'                   => isset($pangkat) && isset($item['golongan']) && $item['golongan'] !== null
-                                                    ? $pangkat . ' ( ' . $item['golongan'] . ' )'
-                                                    : $pangkat,
+                    'pangkat'                   => (function() use ($item, $pangkat) {
+                        $nm_kat = $item['kategoriPegawai'] ?? null;
+                        $val = isset($pangkat) && isset($item['golongan']) && $item['golongan'] !== null
+                            ? $pangkat . ' ( ' . $item['golongan'] . ' )'
+                            : $pangkat;
+                        if (in_array($nm_kat, ['PPPK', 'BLU', 'PPPK Paruh Waktu'], true) && $val !== null && $val !== '') {
+                            if (isset($item['golongan']) && $item['golongan'] !== null && (string)$item['golongan'] !== '') {
+                                $val = trim((string)$item['golongan']);
+                            } elseif (preg_match('/\s*\(\s*([^)]+)\s*\)\s*$/', $val, $m)) {
+                                $val = trim($m[1]);
+                            }
+                        }
+                        return $val;
+                    })(),
                     'kat_jabatan'               => $kat_jabatan,
                     'id_kat_jabatan'            => $id_kat_jabatan,
                     'no_sk'                     => $no_sk,
@@ -792,9 +803,20 @@ function rmn_pegawai(Request $request){
                     'id_unit_simpeg'            => $item['kdUnitKerja'] ?? null,
                     'id_unit_sister'            => $item['idSDM'] ?? null,
                     'pangkat_id'                => $pangkat_id,
-                    'pangkat'                   => isset($pangkat) && isset($item['golongan']) && $item['golongan'] !== null
-                                                    ? $pangkat . ' ( ' . $item['golongan'] . ' )'
-                                                    : $pangkat,
+                    'pangkat'                   => (function() use ($item, $pangkat) {
+                        $nm_kat = $item['kategoriPegawai'] ?? null;
+                        $val = isset($pangkat) && isset($item['golongan']) && $item['golongan'] !== null
+                            ? $pangkat . ' ( ' . $item['golongan'] . ' )'
+                            : $pangkat;
+                        if (in_array($nm_kat, ['PPPK', 'BLU', 'PPPK Paruh Waktu'], true) && $val !== null && $val !== '') {
+                            if (isset($item['golongan']) && $item['golongan'] !== null && (string)$item['golongan'] !== '') {
+                                $val = trim((string)$item['golongan']);
+                            } elseif (preg_match('/\s*\(\s*([^)]+)\s*\)\s*$/', $val, $m)) {
+                                $val = trim($m[1]);
+                            }
+                        }
+                        return $val;
+                    })(),
                     'kat_jabatan'               => $kat_jabatan,
                     'id_kat_jabatan'            => $id_kat_jabatan,
                     'no_sk'                     => $no_sk,
