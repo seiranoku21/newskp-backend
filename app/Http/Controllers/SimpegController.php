@@ -360,7 +360,7 @@ function spg_pegawai(Request $request){
                         $val = isset($pangkat) && isset($item['golongan']) && $item['golongan'] !== null
                             ? $pangkat . ' ( ' . $item['golongan'] . ' )'
                             : $pangkat;
-                        if (in_array($nm_kat, ['PPPK', 'BLU', 'PPPK Paruh Waktu'], true) && $val !== null && $val !== '') {
+                        if (in_array($nm_kat, ['PPPK', 'BLU', 'PKWT', 'PPPK Paruh Waktu'], true) && $val !== null && $val !== '') {
                             if (isset($item['golongan']) && $item['golongan'] !== null && (string)$item['golongan'] !== '') {
                                 $val = trim((string)$item['golongan']);
                             } elseif (preg_match('/\s*\(\s*([^)]+)\s*\)\s*$/', $val, $m)) {
