@@ -1100,6 +1100,70 @@ class AglobalController extends Controller
         ]);
     }
 
+    function vrf_detail_aktifitas(Request $request){
+        $portofolio_uid = $request->portofolio_uid;
+
+        $data = \DB::table('skp_kontrak')
+            ->join('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
+            ->join('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
+            ->join('rencana_hasil_kerja_atasan', function($join) {
+                $join->on('aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
+                     ->on('rencana_hasil_kerja_item.rhka_id', '=', 'rencana_hasil_kerja_atasan.id');
+            })
+            ->where('skp_kontrak.portofolio_uid', $portofolio_uid)
+            ->select(
+                'skp_kontrak.id',
+                'skp_kontrak.tahun',
+                'skp_kontrak.uid',
+                'skp_kontrak.skp_tipe_id',
+                'skp_kontrak.periode_id',
+                'skp_kontrak.periode_awal',
+                'skp_kontrak.periode_akhir',
+                'skp_kontrak.pegawai_id',
+                'skp_kontrak.pegawai_nip',
+                'skp_kontrak.pegawai_email',
+                'skp_kontrak.pegawai_nama',
+                'skp_kontrak.pegawai_pangkat_id',
+                'skp_kontrak.pegawai_pangkat',
+                'skp_kontrak.pegawai_jabatan_id',
+                'skp_kontrak.pegawai_jabatan',
+                'skp_kontrak.pegawai_unit_kerja_id',
+                'skp_kontrak.pegawai_unit_kerja',
+                'skp_kontrak.status_id',
+                'skp_kontrak.status_vrf_id',
+                'skp_kontrak.portofolio_id',
+                'skp_kontrak.portofolio_uid',
+                'skp_kontrak.rating_hasil_kerja',
+                'skp_kontrak.rating_perilaku_kerja',
+                'skp_kontrak.hk_ae',
+                'skp_kontrak.hk_se',
+                'skp_kontrak.hk_be',
+                'skp_kontrak.bobot_persen',
+                'skp_kontrak.predikat_kinerja',
+                'skp_kontrak.poin',
+                'aktifitas_kinerja.rhki_id',
+                'aktifitas_kinerja.rhka_id',
+                'aktifitas_kinerja.tanggal_mulai',
+                'aktifitas_kinerja.tanggal_selesai',
+                'rencana_hasil_kerja_item.kegiatan',
+                'rencana_hasil_kerja_atasan.rubrik_kinerja',
+                'rencana_hasil_kerja_atasan.kategori',
+                'aktifitas_kinerja.jumlah',
+                'aktifitas_kinerja.satuan',
+                'aktifitas_kinerja.dokumen',
+                'aktifitas_kinerja.gambar',
+                'aktifitas_kinerja.tautan',
+                'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
+                'aktifitas_kinerja.poin as akt_poin'
+            )
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
     // ---VERIFIKASI END---
 
     // ---ADMIN START---

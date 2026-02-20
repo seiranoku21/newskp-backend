@@ -269,6 +269,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('get_rating_kinerja', 'AglobalController@get_rating');
     Route::any('ubah_status_vrf', 'AglobalController@ubah_status_vrf');
     Route::get('is_vrf_skp_data', 'AglobalController@is_vrf_skp_data');
+    Route::get('vrf_detail_aktifitas', 'AglobalController@vrf_detail_aktifitas');
     // ---END VERIFIKASI---
 
     // ---ADMIN---
