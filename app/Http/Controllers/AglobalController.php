@@ -1101,16 +1101,15 @@ class AglobalController extends Controller
     }
 
     function vrf_detail_aktifitas(Request $request){
-        $portofolio_uid = $request->portofolio_uid;
+        $skp_kontrak_uid = $request->skp_kontrak_uid;
 
         $data = \DB::table('skp_kontrak')
-            ->join('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
-            ->join('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
-            ->join('rencana_hasil_kerja_atasan', function($join) {
-                $join->on('aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
-                     ->on('rencana_hasil_kerja_item.rhka_id', '=', 'rencana_hasil_kerja_atasan.id');
-            })
-            ->where('skp_kontrak.portofolio_uid', $portofolio_uid)
+            ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
+            ->leftJoin('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
+            ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
+            ->where('skp_kontrak.uid', $skp_kontrak_uid)
+            ->whereColumn('aktifitas_kinerja.tanggal_mulai', '>=', 'skp_kontrak.periode_awal')
+            ->whereColumn('aktifitas_kinerja.tanggal_selesai', '<=', 'skp_kontrak.periode_akhir')
             ->select(
                 'skp_kontrak.id',
                 'skp_kontrak.tahun',
@@ -1156,6 +1155,8 @@ class AglobalController extends Controller
                 'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
                 'aktifitas_kinerja.poin as akt_poin'
             )
+            ->orderByRaw("CASE WHEN rencana_hasil_kerja_atasan.kategori = 'utama' THEN 0 ELSE 1 END")
+            ->orderBy('aktifitas_kinerja.tanggal_mulai')
             ->get();
 
         return response()->json([
