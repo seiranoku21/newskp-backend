@@ -661,7 +661,8 @@ class AglobalController extends Controller
         $rate_sts = [
             'AE' => 'DIATAS EKPEKTASI',
             'SE' => 'SESUAI EKPEKTASI',
-            'BE' => 'DIBAWAH EKPEKTASI'
+            'BE' => 'DIBAWAH EKPEKTASI',
+            'BM' => 'BELUM DINILAI'
         ];
 
         $data = DB::table('skp_kontrak as a')
@@ -1099,9 +1100,39 @@ class AglobalController extends Controller
             'data' => $status_vrf_id
         ]);
     }
+    
+    function vrf_ubah_aktifitas_poin_rating(Request $request){
+        $aktifitas_id = $request->aktifitas_id;
+        $rating_hasil_kerja = $request->rating_hasil_kerja;
+        // Mapping $rating_hasil_kerja to $poin sesuai aturan:
+        if ($rating_hasil_kerja == 'BE') {
+            $poin = 1;
+        } elseif ($rating_hasil_kerja == 'SE') {
+            $poin = 2;
+        } elseif ($rating_hasil_kerja == 'AE') {
+            $poin = 3;
+        } else {
+            $poin = 0;
+        }
+        DB::table('aktifitas_kinerja')
+            ->where('id', $aktifitas_id)
+            ->update(['rating_hasil_kerja' => $rating_hasil_kerja, 'poin' => $poin]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Poin dan rating aktifitas berhasil diperbarui',
+            'data' => $aktifitas_id
+        ]);
+    }
 
     function vrf_detail_aktifitas(Request $request){
         $skp_kontrak_uid = $request->skp_kontrak_uid;
+
+        $rate_sts = [
+            'AE' => 'DIATAS EKPEKTASI',
+            'SE' => 'SESUAI EKPEKTASI',
+            'BE' => 'DIBAWAH EKPEKTASI',
+            'BM' => 'BELUM DINILAI'
+        ];
 
         $data = \DB::table('skp_kontrak')
             ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
@@ -1134,12 +1165,23 @@ class AglobalController extends Controller
                 'skp_kontrak.portofolio_uid',
                 'skp_kontrak.rating_hasil_kerja',
                 'skp_kontrak.rating_perilaku_kerja',
+                DB::raw("CASE skp_kontrak.rating_hasil_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE skp_kontrak.rating_hasil_kerja END as hasil_kerja"),
+                DB::raw("CASE skp_kontrak.rating_perilaku_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE skp_kontrak.rating_perilaku_kerja END as perilaku_kerja"),
                 'skp_kontrak.hk_ae',
                 'skp_kontrak.hk_se',
                 'skp_kontrak.hk_be',
                 'skp_kontrak.bobot_persen',
                 'skp_kontrak.predikat_kinerja',
                 'skp_kontrak.poin',
+                'aktifitas_kinerja.id as akt_id',
                 'aktifitas_kinerja.rhki_id',
                 'aktifitas_kinerja.rhka_id',
                 'aktifitas_kinerja.tanggal_mulai',
@@ -1153,6 +1195,11 @@ class AglobalController extends Controller
                 'aktifitas_kinerja.gambar',
                 'aktifitas_kinerja.tautan',
                 'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
+                DB::raw("CASE aktifitas_kinerja.rating_hasil_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE aktifitas_kinerja.rating_hasil_kerja END as akt_hasil_kerja"),
                 'aktifitas_kinerja.poin as akt_poin'
             )
             ->orderByRaw("CASE WHEN rencana_hasil_kerja_atasan.kategori = 'utama' THEN 0 ELSE 1 END")

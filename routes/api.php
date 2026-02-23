@@ -270,6 +270,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::any('ubah_status_vrf', 'AglobalController@ubah_status_vrf');
     Route::get('is_vrf_skp_data', 'AglobalController@is_vrf_skp_data');
     Route::get('vrf_detail_aktifitas', 'AglobalController@vrf_detail_aktifitas');
+    Route::any('vrf_update_rate_poin_aktifitas', 'AglobalController@vrf_ubah_aktifitas_poin_rating');
     // ---END VERIFIKASI---
 
     // ---ADMIN---
