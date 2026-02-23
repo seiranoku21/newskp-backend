@@ -7,6 +7,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\SimpegController;
 use App\Http\Controllers\SkpKontrakController;
 use App\Http\Controllers\AktifitasKinerjaController;
+use App\Models\PerilakuKerja;
+use App\Models\RefPerilakuKerja;
 use DB;
 
 class AglobalController extends Controller
@@ -1102,9 +1104,19 @@ class AglobalController extends Controller
     }
     
     function vrf_ubah_aktifitas_poin_rating(Request $request){
-        $aktifitas_id = $request->aktifitas_id;
+        $aktifitas_ids = $request->aktifitas_id; // Bisa array, single id, atau string "id1,id2,..."
+
+        // Normalisasi: selalu jadi array of integer
+        if (is_array($aktifitas_ids)) {
+            $aktifitas_ids = array_values(array_filter(array_map('intval', $aktifitas_ids)));
+        } else {
+            $raw = is_string($aktifitas_ids) ? array_map('trim', explode(',', $aktifitas_ids)) : [$aktifitas_ids];
+            $aktifitas_ids = array_values(array_filter(array_map('intval', $raw)));
+        }
+
         $rating_hasil_kerja = $request->rating_hasil_kerja;
-        // Mapping $rating_hasil_kerja to $poin sesuai aturan:
+
+        // Mapping $rating_hasil_kerja ke $poin sesuai aturan
         if ($rating_hasil_kerja == 'BE') {
             $poin = 1;
         } elseif ($rating_hasil_kerja == 'SE') {
@@ -1114,18 +1126,66 @@ class AglobalController extends Controller
         } else {
             $poin = 0;
         }
+
+        if (empty($aktifitas_ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter aktifitas_id tidak valid atau kosong',
+                'data' => null
+            ], 400);
+        }
+
+        // Update semua id dalam array
         DB::table('aktifitas_kinerja')
-            ->where('id', $aktifitas_id)
+            ->whereIn('id', $aktifitas_ids)
             ->update(['rating_hasil_kerja' => $rating_hasil_kerja, 'poin' => $poin]);
+
         return response()->json([
             'success' => true,
             'message' => 'Poin dan rating aktifitas berhasil diperbarui',
-            'data' => $aktifitas_id
+            'data' => $aktifitas_ids
         ]);
     }
 
-    function vrf_detail_aktifitas(Request $request){
+    function vrf_detail(Request $request){
         $skp_kontrak_uid = $request->skp_kontrak_uid;
+
+        $skp_kontrak = \DB::table('skp_kontrak')->where('uid', $skp_kontrak_uid)->first();
+        $perilaku_kerja = [];
+        $perilaku_kerja_ada = false;
+        if ($skp_kontrak) {
+            $perilaku_kerja_raw = PerilakuKerja::with('refPerilakuKerja')
+                ->where('uid', $skp_kontrak->uid)
+                ->get();
+            $perilaku_kerja_ada = $perilaku_kerja_raw->isNotEmpty();
+            $ref_perilaku_kerja_all = RefPerilakuKerja::all();
+            $ekspektasi_map = [];
+            foreach ($perilaku_kerja_raw as $item) {
+                $ekspektasi_map[$item->perilaku_kerja_kode] = $item->ekspektasi_pimpinan;
+            }
+            $perilaku_kerja_grouped = [];
+            foreach ($ref_perilaku_kerja_all as $item) {
+                $kode = $item->kode;
+                if (strpos($kode, '.') === false) {
+                    $perilaku_kerja_grouped[$kode] = [
+                        'no' => $kode,
+                        'kode' => $kode,
+                        'perilaku_kerja' => $item->perilaku_kerja,
+                        'ekspektasi_pimpinan' => $ekspektasi_map[$kode] ?? '',
+                        'items' => []
+                    ];
+                } else {
+                    $parent_kode = explode('.', $kode)[0];
+                    if (isset($perilaku_kerja_grouped[$parent_kode])) {
+                        $perilaku_kerja_grouped[$parent_kode]['items'][] = [
+                            'kode' => $kode,
+                            'perilaku_kerja' => $item->perilaku_kerja,
+                        ];
+                    }
+                }
+            }
+            $perilaku_kerja = array_values($perilaku_kerja_grouped);
+        }
 
         $rate_sts = [
             'AE' => 'DIATAS EKPEKTASI',
@@ -1208,7 +1268,9 @@ class AglobalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $data,
+            'perilaku_kerja' => $perilaku_kerja,
+            'perilaku_kerja_ada' => $perilaku_kerja_ada
         ]);
     }
 

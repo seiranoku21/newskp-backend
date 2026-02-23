@@ -249,11 +249,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('get_portofolio_by_id/{id}', 'AglobalController@get_portofolio_by_id');
     Route::get('get_aktifitas', 'AglobalController@get_aktifitas');	
     Route::get('ref_hasil_kerja/{kode}', 'AglobalController@ref_hasil_kerja');
-    // ---PERILAKU KERJA---
-    Route::post('tambah_perilaku_kerja_template', 'AglobalController@tambah_perilaku_kerja_template');
-    Route::post('tambah_perilaku_kerja_template_blank', 'AglobalController@tambah_perilaku_kerja_template_blank');
-    Route::any('ubah_perilaku_kerja', 'AglobalController@ubah_perilaku_kerja');
-    Route::get('cek_perilaku_kerja_template', 'AglobalController@cek_perilaku_kerja_template');
+    
     // ---KONTRAK---
     Route::get('get_skp_kontrak', 'AglobalController@get_skp_kontrak');
     // ---END KONTRAK
@@ -269,8 +265,13 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('get_rating_kinerja', 'AglobalController@get_rating');
     Route::any('ubah_status_vrf', 'AglobalController@ubah_status_vrf');
     Route::get('is_vrf_skp_data', 'AglobalController@is_vrf_skp_data');
-    Route::get('vrf_detail_aktifitas', 'AglobalController@vrf_detail_aktifitas');
+    Route::get('vrf_detail', 'AglobalController@vrf_detail');
     Route::any('vrf_update_rate_poin_aktifitas', 'AglobalController@vrf_ubah_aktifitas_poin_rating');
+    //  ---VERIFIKASI ---PERILAKU KERJA
+    Route::post('tambah_perilaku_kerja_template', 'AglobalController@tambah_perilaku_kerja_template');
+    Route::post('tambah_perilaku_kerja_template_blank', 'AglobalController@tambah_perilaku_kerja_template_blank');
+    Route::any('ubah_perilaku_kerja', 'AglobalController@ubah_perilaku_kerja');
+    Route::get('cek_perilaku_kerja_template', 'AglobalController@cek_perilaku_kerja_template');
     // ---END VERIFIKASI---
 
     // ---ADMIN---
