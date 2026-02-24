@@ -760,8 +760,21 @@ class AglobalController extends Controller
     }
 
     function tambah_perilaku_kerja_template(Request $request){
-        $uid = $request->uid;
-        
+        $uid = $request->uid ?? $request->skp_kontrak_uid ?? null;
+        if (empty($uid)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter uid atau skp_kontrak_uid harus diisi'
+            ], 400);
+        }
+
+        if (DB::table('perilaku_kerja')->where('uid', $uid)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data perilaku kerja untuk SKP ini sudah ada. Tidak dapat menambah template lagi.'
+            ], 409);
+        }
+
         $perilaku_kerja_kode = [1, 2, 3, 4, 5, 6, 7];
         $ekspektasi_pimpinan = [
             'Memberikan pelayanan yang maksimal',
@@ -791,8 +804,21 @@ class AglobalController extends Controller
     }
 
     function tambah_perilaku_kerja_template_blank(Request $request){
-        $uid = $request->uid;
-        
+        $uid = $request->uid ?? $request->skp_kontrak_uid ?? null;
+        if (empty($uid)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter uid atau skp_kontrak_uid harus diisi'
+            ], 400);
+        }
+
+        if (DB::table('perilaku_kerja')->where('uid', $uid)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data perilaku kerja untuk SKP ini sudah ada. Tidak dapat menambah isi kosong lagi.'
+            ], 409);
+        }
+
         $perilaku_kerja_kode = [1, 2, 3, 4, 5, 6, 7];
         $ekspektasi_pimpinan = [
             '',
@@ -1229,11 +1255,13 @@ class AglobalController extends Controller
                         WHEN 'AE' THEN '{$rate_sts['AE']}'
                         WHEN 'SE' THEN '{$rate_sts['SE']}'
                         WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        WHEN 'BM' THEN '{$rate_sts['BM']}'
                         ELSE skp_kontrak.rating_hasil_kerja END as hasil_kerja"),
                 DB::raw("CASE skp_kontrak.rating_perilaku_kerja
                         WHEN 'AE' THEN '{$rate_sts['AE']}'
                         WHEN 'SE' THEN '{$rate_sts['SE']}'
                         WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        WHEN 'BM' THEN '{$rate_sts['BM']}'
                         ELSE skp_kontrak.rating_perilaku_kerja END as perilaku_kerja"),
                 'skp_kontrak.hk_ae',
                 'skp_kontrak.hk_se',

@@ -267,7 +267,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('is_vrf_skp_data', 'AglobalController@is_vrf_skp_data');
     Route::get('vrf_detail', 'AglobalController@vrf_detail');
     Route::any('vrf_update_rate_poin_aktifitas', 'AglobalController@vrf_ubah_aktifitas_poin_rating');
-    //  ---VERIFIKASI ---PERILAKU KERJA
+    //  ---VERIFIKASI --- PERILAKU KERJA---
     Route::post('tambah_perilaku_kerja_template', 'AglobalController@tambah_perilaku_kerja_template');
     Route::post('tambah_perilaku_kerja_template_blank', 'AglobalController@tambah_perilaku_kerja_template_blank');
     Route::any('ubah_perilaku_kerja', 'AglobalController@ubah_perilaku_kerja');
