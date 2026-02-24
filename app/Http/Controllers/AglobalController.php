@@ -1137,16 +1137,54 @@ class AglobalController extends Controller
         return $data;
     }
 
+    /**
+     * Tabel Predikat Kinerja Pegawai: (Hasil Kerja, Perilaku Kerja) -> Predikat
+     * AE = Di Atas Ekspektasi, SE = Sesuai Ekspektasi, BE = Di Bawah Ekspektasi
+     */
+    private function hitungPredikatKinerja($rating_hasil_kerja, $rating_perilaku_kerja)
+    {
+        $hk = strtoupper(trim((string) ($rating_hasil_kerja ?? '')));
+        $pk = strtoupper(trim((string) ($rating_perilaku_kerja ?? '')));
+        $matrix = [
+            'AE' => ['AE' => 'SANGAT BAIK', 'SE' => 'BAIK', 'BE' => 'KURANG'],
+            'SE' => ['AE' => 'BAIK', 'SE' => 'BAIK', 'BE' => 'KURANG'],
+            'BE' => ['AE' => 'BUTUH PERBAIKAN', 'SE' => 'BUTUH PERBAIKAN', 'BE' => 'SANGAT KURANG'],
+        ];
+        return $matrix[$hk][$pk] ?? null;
+    }
+
     function ubah_status_vrf(Request $request){
         $uid = $request->uid;
-        $status_vrf_id = $request->status_vrf_id;
-        DB::table('skp_kontrak')
-            ->where('uid', $uid)
-            ->update(['status_vrf_id' => $status_vrf_id]);
+        $status_vrf_id = (int) $request->status_vrf_id;
+
+        $row = DB::table('skp_kontrak')->where('uid', $uid)->first();
+        if (!$row) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SKP kontrak tidak ditemukan',
+            ], 404);
+        }
+
+        $updateData = ['status_vrf_id' => $status_vrf_id];
+
+        // Saat Selesai verifikasi (status 3), hitung dan simpan predikat kinerja dari tabel predikat kinerja pegawai
+        if ($status_vrf_id === 3) {
+            $predikat = $this->hitungPredikatKinerja($row->rating_hasil_kerja, $row->rating_perilaku_kerja);
+            if ($predikat !== null) {
+                $updateData['predikat_kinerja'] = $predikat;
+            }
+        }
+
+        DB::table('skp_kontrak')->where('uid', $uid)->update($updateData);
+
+        $responseData = ['status_vrf_id' => $status_vrf_id];
+        if (isset($updateData['predikat_kinerja'])) {
+            $responseData['predikat_kinerja'] = $updateData['predikat_kinerja'];
+        }
         return response()->json([
             'success' => true,
             'message' => 'Status verifikasi berhasil diperbarui',
-            'data' => $status_vrf_id
+            'data' => $responseData
         ]);
     }
     
