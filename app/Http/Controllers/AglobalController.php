@@ -1078,6 +1078,27 @@ class AglobalController extends Controller
         }
     }
 
+    function ubah_hasil_kerja_vrf(Request $request){
+        $uid = $request->uid;
+        $rating_hasil_kerja = $request->rating_hasil_kerja;
+        try {
+            DB::table('skp_kontrak')
+                ->where('uid', $uid)
+                ->update(['rating_hasil_kerja' => $rating_hasil_kerja]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Rating hasil kerja berhasil diperbarui',
+                'data' => $rating_hasil_kerja
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating hasil kerja: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     function ubah_predikat_kinerja(Request $request){
         $uid = $request->uid;
         $predikat_kinerja = $request->predikat_kinerja;

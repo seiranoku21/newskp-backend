@@ -261,6 +261,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('rating_hasil_kerja_aktifitas', 'AglobalController@rating_hasil_kerja_aktifitas');
     Route::any('ubah_skp_kontrak_vrf', 'AglobalController@ubah_skp_kontrak_vrf');
     Route::any('ubah_perilaku_kerja_vrf', 'AglobalController@ubah_perilaku_kerja_vrf');
+    Route::any('ubah_hasil_kerja_vrf', 'AglobalController@ubah_hasil_kerja_vrf');
     Route::any('ubah_predikat_kinerja', 'AglobalController@ubah_predikat_kinerja');
     Route::get('get_rating_kinerja', 'AglobalController@get_rating');
     Route::any('ubah_status_vrf', 'AglobalController@ubah_status_vrf');
