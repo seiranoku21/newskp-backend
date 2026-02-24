@@ -1306,13 +1306,14 @@ class AglobalController extends Controller
             'BM' => 'BELUM DINILAI'
         ];
 
+        // Query utama: join by portofolio_uid + periode. Gunakan DATE() agar perbandingan konsisten (DATE vs DATETIME) di semua lingkungan.
         $data = \DB::table('skp_kontrak')
             ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
             ->leftJoin('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
             ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
             ->where('skp_kontrak.uid', $skp_kontrak_uid)
-            ->whereColumn('aktifitas_kinerja.tanggal_mulai', '>=', 'skp_kontrak.periode_awal')
-            ->whereColumn('aktifitas_kinerja.tanggal_selesai', '<=', 'skp_kontrak.periode_akhir')
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
             ->select(
                 'skp_kontrak.id',
                 'skp_kontrak.tahun',
@@ -1379,6 +1380,90 @@ class AglobalController extends Controller
             ->orderByRaw("CASE WHEN rencana_hasil_kerja_atasan.kategori = 'utama' THEN 0 ELSE 1 END")
             ->orderBy('aktifitas_kinerja.tanggal_mulai')
             ->get();
+
+        // Fallback jika data kosong: ambil aktivitas by NIP pegawai + periode (sama seperti LapController).
+        // Berguna jika di server portofolio_uid tidak cocok atau ada perbedaan data.
+        if ($data->isEmpty() && $skp_kontrak) {
+            $data = \DB::table('skp_kontrak')
+                ->leftJoin('aktifitas_kinerja', function ($j) {
+                    $j->on('aktifitas_kinerja.nip', '=', 'skp_kontrak.pegawai_nip')
+                        ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+                        ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)');
+                })
+                ->leftJoin('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
+                ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
+                ->where('skp_kontrak.uid', $skp_kontrak_uid)
+                ->select(
+                    'skp_kontrak.id',
+                    'skp_kontrak.tahun',
+                    'skp_kontrak.uid',
+                    'skp_kontrak.skp_tipe_id',
+                    'skp_kontrak.periode_id',
+                    'skp_kontrak.periode_awal',
+                    'skp_kontrak.periode_akhir',
+                    'skp_kontrak.pegawai_id',
+                    'skp_kontrak.pegawai_nip',
+                    'skp_kontrak.pegawai_email',
+                    'skp_kontrak.pegawai_nama',
+                    'skp_kontrak.pegawai_pangkat_id',
+                    'skp_kontrak.pegawai_pangkat',
+                    'skp_kontrak.pegawai_jabatan_id',
+                    'skp_kontrak.pegawai_jabatan',
+                    'skp_kontrak.pegawai_unit_kerja_id',
+                    'skp_kontrak.pegawai_unit_kerja',
+                    'skp_kontrak.status_id',
+                    'skp_kontrak.status_vrf_id',
+                    'skp_kontrak.portofolio_id',
+                    'skp_kontrak.portofolio_uid',
+                    'skp_kontrak.rating_hasil_kerja',
+                    'skp_kontrak.rating_perilaku_kerja',
+                    DB::raw("CASE skp_kontrak.rating_hasil_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        WHEN 'BM' THEN '{$rate_sts['BM']}'
+                        ELSE skp_kontrak.rating_hasil_kerja END as hasil_kerja"),
+                    DB::raw("CASE skp_kontrak.rating_perilaku_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        WHEN 'BM' THEN '{$rate_sts['BM']}'
+                        ELSE skp_kontrak.rating_perilaku_kerja END as perilaku_kerja"),
+                    'skp_kontrak.hk_ae',
+                    'skp_kontrak.hk_se',
+                    'skp_kontrak.hk_be',
+                    'skp_kontrak.bobot_persen',
+                    'skp_kontrak.predikat_kinerja',
+                    'skp_kontrak.poin',
+                    'aktifitas_kinerja.id as akt_id',
+                    'aktifitas_kinerja.rhki_id',
+                    'aktifitas_kinerja.rhka_id',
+                    'aktifitas_kinerja.tanggal_mulai',
+                    'aktifitas_kinerja.tanggal_selesai',
+                    'rencana_hasil_kerja_item.kegiatan',
+                    'rencana_hasil_kerja_atasan.rubrik_kinerja',
+                    'rencana_hasil_kerja_atasan.kategori',
+                    'aktifitas_kinerja.jumlah',
+                    'aktifitas_kinerja.satuan',
+                    'aktifitas_kinerja.dokumen',
+                    'aktifitas_kinerja.gambar',
+                    'aktifitas_kinerja.tautan',
+                    'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
+                    DB::raw("CASE aktifitas_kinerja.rating_hasil_kerja
+                        WHEN 'AE' THEN '{$rate_sts['AE']}'
+                        WHEN 'SE' THEN '{$rate_sts['SE']}'
+                        WHEN 'BE' THEN '{$rate_sts['BE']}'
+                        ELSE aktifitas_kinerja.rating_hasil_kerja END as akt_hasil_kerja"),
+                    'aktifitas_kinerja.poin as akt_poin'
+                )
+                ->orderByRaw("CASE WHEN rencana_hasil_kerja_atasan.kategori = 'utama' THEN 0 ELSE 1 END")
+                ->orderBy('aktifitas_kinerja.tanggal_mulai')
+                ->get();
+            // Hanya baris yang punya aktivitas (akt_id tidak null)
+            $data = $data->filter(function ($row) {
+                return isset($row->akt_id) && $row->akt_id !== null;
+            })->values();
+        }
 
         $jml_rating_ae = $data->where('akt_rating_hasil_kerja', 'AE')->count();
         $jml_rating_se = $data->where('akt_rating_hasil_kerja', 'SE')->count();
