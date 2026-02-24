@@ -1167,11 +1167,38 @@ class AglobalController extends Controller
 
         $updateData = ['status_vrf_id' => $status_vrf_id];
 
-        // Saat Selesai verifikasi (status 3), hitung dan simpan predikat kinerja dari tabel predikat kinerja pegawai
+        // Saat Selesai verifikasi (status 3), hitung dan simpan predikat kinerja + statistik (hk_ae, hk_se, hk_be, bobot_persen)
         if ($status_vrf_id === 3) {
             $predikat = $this->hitungPredikatKinerja($row->rating_hasil_kerja, $row->rating_perilaku_kerja);
             if ($predikat !== null) {
                 $updateData['predikat_kinerja'] = $predikat;
+            }
+
+            // Hitung jml_rating_ae, jml_rating_se, jml_rating_be dari aktifitas_kinerja (sama seperti vrf_detail)
+            $aktifitas = DB::table('skp_kontrak')
+                ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
+                ->where('skp_kontrak.uid', $uid)
+                ->whereColumn('aktifitas_kinerja.tanggal_mulai', '>=', 'skp_kontrak.periode_awal')
+                ->whereColumn('aktifitas_kinerja.tanggal_selesai', '<=', 'skp_kontrak.periode_akhir')
+                ->select('aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja', 'aktifitas_kinerja.poin as akt_poin')
+                ->get();
+
+            $jml_rating_ae = $aktifitas->where('akt_rating_hasil_kerja', 'AE')->count();
+            $jml_rating_se = $aktifitas->where('akt_rating_hasil_kerja', 'SE')->count();
+            $jml_rating_be = $aktifitas->where('akt_rating_hasil_kerja', 'BE')->count();
+            $total_poin = $aktifitas->sum('akt_poin');
+            $jml_total_aktifitas = $aktifitas->count();
+            $bobot_persen = $jml_total_aktifitas > 0
+                ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
+                : null;
+
+            $updateData['hk_ae'] = $jml_rating_ae;
+            $updateData['hk_se'] = $jml_rating_se;
+            $updateData['hk_be'] = $jml_rating_be;
+            if ($bobot_persen !== null) {
+                $updateData['bobot_persen'] = $bobot_persen;
+                $point_remun = round((float) (($bobot_persen / 100) * 9.33), 3);
+                $updateData['poin'] = $point_remun;
             }
         }
 
@@ -1353,11 +1380,32 @@ class AglobalController extends Controller
             ->orderBy('aktifitas_kinerja.tanggal_mulai')
             ->get();
 
+        $jml_rating_ae = $data->where('akt_rating_hasil_kerja', 'AE')->count();
+        $jml_rating_se = $data->where('akt_rating_hasil_kerja', 'SE')->count();
+        $jml_rating_be = $data->where('akt_rating_hasil_kerja', 'BE')->count();
+        $total_poin = $data->sum('akt_poin');
+        $jml_total_aktifitas = $data->count();
+        $bobot_persen = $jml_total_aktifitas > 0
+            ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
+            : 0;
+        $point_remun = round((float) (($bobot_persen / 100) * 9.33), 3);
+
+        $stastisik_aktifitas = [
+            'jml_rating_ae' => $jml_rating_ae,
+            'jml_rating_se' => $jml_rating_se,
+            'jml_rating_be' => $jml_rating_be,
+            'total_poin' => (int) $total_poin,
+            'total_aktifitas' => $jml_total_aktifitas,
+            'bobot_persen' => $bobot_persen,
+            'point_remun' => $point_remun,
+        ];
+
         return response()->json([
             'success' => true,
             'data' => $data,
             'perilaku_kerja' => $perilaku_kerja,
-            'perilaku_kerja_ada' => $perilaku_kerja_ada
+            'perilaku_kerja_ada' => $perilaku_kerja_ada,
+            'stastisik_aktifitas' => $stastisik_aktifitas
         ]);
     }
 
