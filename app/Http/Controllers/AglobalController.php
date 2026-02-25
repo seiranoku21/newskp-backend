@@ -1306,18 +1306,13 @@ class AglobalController extends Controller
             'BM' => 'BELUM DINILAI'
         ];
 
-        // Query utama: join by portofolio_uid + periode. Gunakan DATE() agar perbandingan konsisten (DATE vs DATETIME) di semua lingkungan.
-        $data = \DB::table('skp_kontrak')
-            ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
-            ->leftJoin('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
-            ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
-            ->where('skp_kontrak.uid', $skp_kontrak_uid)
-            ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
-            ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
+        // Data kontrak SKP (yang ditandai kotak merah): satu baris per uid
+        $kontrak_skp = \DB::table('skp_kontrak')
+            ->where('uid', $skp_kontrak_uid)
             ->select(
                 'skp_kontrak.id',
-                'skp_kontrak.tahun',
                 'skp_kontrak.uid',
+                'skp_kontrak.tahun',
                 'skp_kontrak.skp_tipe_id',
                 'skp_kontrak.periode_id',
                 'skp_kontrak.periode_awal',
@@ -1355,7 +1350,19 @@ class AglobalController extends Controller
                 'skp_kontrak.hk_be',
                 'skp_kontrak.bobot_persen',
                 'skp_kontrak.predikat_kinerja',
-                'skp_kontrak.poin',
+                'skp_kontrak.poin'
+            )
+            ->first();
+
+        // Query utama: join by portofolio_uid + periode. Gunakan DATE() agar perbandingan konsisten (DATE vs DATETIME) di semua lingkungan.
+        $aktifitas_raw = \DB::table('skp_kontrak')
+            ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
+            ->leftJoin('rencana_hasil_kerja_item', 'aktifitas_kinerja.rhki_id', '=', 'rencana_hasil_kerja_item.id')
+            ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
+            ->where('skp_kontrak.uid', $skp_kontrak_uid)
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
+            ->select(
                 'aktifitas_kinerja.id as akt_id',
                 'aktifitas_kinerja.rhki_id',
                 'aktifitas_kinerja.rhka_id',
@@ -1383,7 +1390,7 @@ class AglobalController extends Controller
 
         // Fallback jika data kosong: ambil aktivitas by NIP pegawai + periode (sama seperti LapController).
         // Berguna jika di server portofolio_uid tidak cocok atau ada perbedaan data.
-        if ($data->isEmpty() && $skp_kontrak) {
+        if ($aktifitas_raw->isEmpty() && $skp_kontrak) {
             $data = \DB::table('skp_kontrak')
                 ->leftJoin('aktifitas_kinerja', function ($j) {
                     $j->on('aktifitas_kinerja.nip', '=', 'skp_kontrak.pegawai_nip')
@@ -1394,47 +1401,6 @@ class AglobalController extends Controller
                 ->leftJoin('rencana_hasil_kerja_atasan', 'aktifitas_kinerja.rhka_id', '=', 'rencana_hasil_kerja_atasan.id')
                 ->where('skp_kontrak.uid', $skp_kontrak_uid)
                 ->select(
-                    'skp_kontrak.id',
-                    'skp_kontrak.tahun',
-                    'skp_kontrak.uid',
-                    'skp_kontrak.skp_tipe_id',
-                    'skp_kontrak.periode_id',
-                    'skp_kontrak.periode_awal',
-                    'skp_kontrak.periode_akhir',
-                    'skp_kontrak.pegawai_id',
-                    'skp_kontrak.pegawai_nip',
-                    'skp_kontrak.pegawai_email',
-                    'skp_kontrak.pegawai_nama',
-                    'skp_kontrak.pegawai_pangkat_id',
-                    'skp_kontrak.pegawai_pangkat',
-                    'skp_kontrak.pegawai_jabatan_id',
-                    'skp_kontrak.pegawai_jabatan',
-                    'skp_kontrak.pegawai_unit_kerja_id',
-                    'skp_kontrak.pegawai_unit_kerja',
-                    'skp_kontrak.status_id',
-                    'skp_kontrak.status_vrf_id',
-                    'skp_kontrak.portofolio_id',
-                    'skp_kontrak.portofolio_uid',
-                    'skp_kontrak.rating_hasil_kerja',
-                    'skp_kontrak.rating_perilaku_kerja',
-                    DB::raw("CASE skp_kontrak.rating_hasil_kerja
-                        WHEN 'AE' THEN '{$rate_sts['AE']}'
-                        WHEN 'SE' THEN '{$rate_sts['SE']}'
-                        WHEN 'BE' THEN '{$rate_sts['BE']}'
-                        WHEN 'BM' THEN '{$rate_sts['BM']}'
-                        ELSE skp_kontrak.rating_hasil_kerja END as hasil_kerja"),
-                    DB::raw("CASE skp_kontrak.rating_perilaku_kerja
-                        WHEN 'AE' THEN '{$rate_sts['AE']}'
-                        WHEN 'SE' THEN '{$rate_sts['SE']}'
-                        WHEN 'BE' THEN '{$rate_sts['BE']}'
-                        WHEN 'BM' THEN '{$rate_sts['BM']}'
-                        ELSE skp_kontrak.rating_perilaku_kerja END as perilaku_kerja"),
-                    'skp_kontrak.hk_ae',
-                    'skp_kontrak.hk_se',
-                    'skp_kontrak.hk_be',
-                    'skp_kontrak.bobot_persen',
-                    'skp_kontrak.predikat_kinerja',
-                    'skp_kontrak.poin',
                     'aktifitas_kinerja.id as akt_id',
                     'aktifitas_kinerja.rhki_id',
                     'aktifitas_kinerja.rhka_id',
@@ -1460,16 +1426,16 @@ class AglobalController extends Controller
                 ->orderBy('aktifitas_kinerja.tanggal_mulai')
                 ->get();
             // Hanya baris yang punya aktivitas (akt_id tidak null)
-            $data = $data->filter(function ($row) {
+            $aktifitas_raw = $aktifitas_raw->filter(function ($row) {
                 return isset($row->akt_id) && $row->akt_id !== null;
             })->values();
         }
 
-        $jml_rating_ae = $data->where('akt_rating_hasil_kerja', 'AE')->count();
-        $jml_rating_se = $data->where('akt_rating_hasil_kerja', 'SE')->count();
-        $jml_rating_be = $data->where('akt_rating_hasil_kerja', 'BE')->count();
-        $total_poin = $data->sum('akt_poin');
-        $jml_total_aktifitas = $data->count();
+        $jml_rating_ae = $aktifitas_raw->where('akt_rating_hasil_kerja', 'AE')->count();
+        $jml_rating_se = $aktifitas_raw->where('akt_rating_hasil_kerja', 'SE')->count();
+        $jml_rating_be = $aktifitas_raw->where('akt_rating_hasil_kerja', 'BE')->count();
+        $total_poin = $aktifitas_raw->sum('akt_poin');
+        $jml_total_aktifitas = $aktifitas_raw->count();
         $bobot_persen = $jml_total_aktifitas > 0
             ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
             : 0;
@@ -1487,10 +1453,14 @@ class AglobalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $data,
-            'perilaku_kerja' => $perilaku_kerja,
-            'perilaku_kerja_ada' => $perilaku_kerja_ada,
-            'stastisik_aktifitas' => $stastisik_aktifitas
+            'data' => [
+                        'kontrak_skp' => $kontrak_skp,
+                        'aktifitas' => $aktifitas_raw,
+                        'stastisik_aktifitas' => $stastisik_aktifitas,
+                        'perilaku_kerja' => $perilaku_kerja,
+                        'perilaku_kerja_ada' => $perilaku_kerja_ada
+            ], 
+            
         ]);
     }
 
