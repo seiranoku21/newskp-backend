@@ -247,13 +247,28 @@ class AuthController extends Controller{
 	 */
 	function logout(Request $request) {
 		try {
-			// Clear access_token cookie
+			$rootDomain = '.untirta.ac.id';
+
+			// Clear access_token cookie (root domain)
 			$accessTokenCookie = cookie(
 				'access_token',
 				'',
 				-1, // Expired
 				'/',
-				null,
+				$rootDomain,
+				false,
+				true,
+				false,
+				'lax'
+			);
+
+			// Clear refresh_token cookie (root domain)
+			$refreshTokenCookie = cookie(
+				'refresh_token',
+				'',
+				-1,
+				'/',
+				$rootDomain,
 				false,
 				true,
 				false,
@@ -290,6 +305,7 @@ class AuthController extends Controller{
 				'message' => 'Logged out successfully'
 			], 200)
 				->cookie($accessTokenCookie)
+				->cookie($refreshTokenCookie)
 				->cookie($sessionCookie)
 				->cookie($xsrfCookie);
 
