@@ -36,20 +36,16 @@ class AglobalController extends Controller
             }
 
             // Gabungkan data setting dan periode aktif (jika ada)
-            $result = [
-                "success" => true,
-                "data" => $data,
-                "periode_aktif_tendik" => $periode_aktif_tendik,
-                "periode_aktif_dosen" => $periode_aktif_dosen
-            ];
-
-            return response()->json($result);
-        } else {
-            return response()->json([
-                "success" => false,
-                "message" => "Data not found"
-            ], 404);
-        }
+                return response()->json([
+                        "success" => true,
+                        "message" => "Data setting berhasil diambil",
+                        "data" => [
+                            'setting' => $data,
+                            'periode_aktif_tendik' => $periode_aktif_tendik,
+                            'periode_aktif_dosen' => $periode_aktif_dosen
+                        ],
+                    ]);
+                }
     }
 
     // ---PEGAWAI START---
