@@ -38,6 +38,43 @@ class AuthController extends Controller{
 	}
 
 	function login(Request $request){
+		$rootDomain = '.untirta.ac.id';
+
+		// Jika ada cookie access_token (root domain), cek validitas → login=true
+		$accessToken = $request->cookie('access_token');
+		if (!empty($accessToken)) {
+			try {
+				$userId = JWTHelper::decode(trim($accessToken));
+				$user = Users::find($userId);
+				if ($user && $user->is_active) {
+					$token = $this->generateUserToken($user);
+					$cookie = cookie(
+						'access_token',
+						$token,
+						config('auth.jwt_duration'),
+						'/',
+						$rootDomain,
+						false,
+						true,
+						false,
+						'lax'
+					);
+					return response()->json([
+						'login' => true,
+						'token' => $token,
+						'user' => [
+							'id' => $user->user_id,
+							'username' => $user->username,
+							'email' => $user->email,
+							'name' => $user->name_info
+						]
+					], 200)->cookie($cookie);
+				}
+			} catch (Exception $e) {
+				// Token invalid/expired, lanjut login biasa
+			}
+		}
+
 		$username = $request->username;
 		$password = $request->password;
 		if(filter_var($username, FILTER_VALIDATE_EMAIL)) {
@@ -54,13 +91,13 @@ class AuthController extends Controller{
 		// Generate JWT token for regular login
 		$token = $this->generateUserToken($user);
 		
-		// Set cookie untuk access_token (sama seperti SSO)
+		// Set cookie access_token ke root domain
 		$cookie = cookie(
 			'access_token',              // nama cookie
 			$token,                      // value (JWT token)
 			config('auth.jwt_duration'), // durasi dalam menit
 			'/',                         // path
-			null,                        // domain
+			$rootDomain,                 // domain (root untirta.ac.id)
 			false,                       // secure (set true di production dengan HTTPS)
 			true,                        // httpOnly
 			false,                       // raw
