@@ -425,6 +425,7 @@ class AuthController extends Controller{
 			];
 			$guzzleRequest = new GuzzleRequest('POST', 'https://sso.untirta.ac.id/api/v1/userinfo', $headers);
 			$res = $client->sendAsync($guzzleRequest)->wait();
+			$statusCode = $res->getStatusCode();
 			$body = $res->getBody()->getContents();
 			$data = json_decode($body, true);
 			if (json_last_error() !== JSON_ERROR_NONE) {
@@ -432,6 +433,19 @@ class AuthController extends Controller{
 					'error' => 'Invalid JSON from SSO',
 					'raw' => $body
 				], 502);
+			}
+			// SSO mengembalikan error (token salah / bukan token SSO)
+			if ($statusCode >= 400) {
+				$msg = $data['message'] ?? $data['error'] ?? $body;
+				$isWrongToken = (stripos((string) $msg, 'Incorrect key') !== false || stripos((string) $msg, 'algorithm') !== false);
+				$clearCookie = cookie('access_token', '', -1, '/', null, false, true, false, 'lax');
+				$response = response()->json([
+					'message' => $isWrongToken
+						? 'Token tidak valid atau bukan token SSO Untirta. Silakan klik "Masuk dengan SSO" dan login ulang di halaman SSO.'
+						: $msg,
+					'error' => $msg
+				], 401);
+				return $response->withCookie($clearCookie);
 			}
 			// Cek user di tabel users by pengguna_email dari respon SSO
 			$pengguna_email = $data['pengguna_email'] ?? null;
