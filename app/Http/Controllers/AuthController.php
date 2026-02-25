@@ -249,11 +249,24 @@ class AuthController extends Controller{
 		try {
 			$rootDomain = '.untirta.ac.id';
 
-			// Clear access_token cookie (root domain)
-			$accessTokenCookie = cookie(
+			// Clear access_token: harus sama dengan saat set (domain null = host request)
+			// Supaya cookie di skpv2.untirta.ac.id terhapus
+			$accessTokenCookieHost = cookie(
 				'access_token',
 				'',
-				-1, // Expired
+				-1,
+				'/',
+				null,
+				false,
+				true,
+				false,
+				'lax'
+			);
+			// Juga clear untuk root domain (jika ada cookie set dengan domain .untirta.ac.id)
+			$accessTokenCookieRoot = cookie(
+				'access_token',
+				'',
+				-1,
 				'/',
 				$rootDomain,
 				false,
@@ -262,7 +275,7 @@ class AuthController extends Controller{
 				'lax'
 			);
 
-			// Clear refresh_token cookie (root domain)
+			// Clear refresh_token (root domain)
 			$refreshTokenCookie = cookie(
 				'refresh_token',
 				'',
@@ -304,7 +317,8 @@ class AuthController extends Controller{
 			return response()->json([
 				'message' => 'Logged out successfully'
 			], 200)
-				->cookie($accessTokenCookie)
+				->cookie($accessTokenCookieHost)
+				->cookie($accessTokenCookieRoot)
 				->cookie($refreshTokenCookie)
 				->cookie($sessionCookie)
 				->cookie($xsrfCookie);
