@@ -1387,7 +1387,7 @@ class AglobalController extends Controller
         // Fallback jika data kosong: ambil aktivitas by NIP pegawai + periode (sama seperti LapController).
         // Berguna jika di server portofolio_uid tidak cocok atau ada perbedaan data.
         if ($aktifitas_raw->isEmpty() && $skp_kontrak) {
-            $data = \DB::table('skp_kontrak')
+            $aktifitas_fallback = \DB::table('skp_kontrak')
                 ->leftJoin('aktifitas_kinerja', function ($j) {
                     $j->on('aktifitas_kinerja.nip', '=', 'skp_kontrak.pegawai_nip')
                         ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
@@ -1421,8 +1421,8 @@ class AglobalController extends Controller
                 ->orderByRaw("CASE WHEN rencana_hasil_kerja_atasan.kategori = 'utama' THEN 0 ELSE 1 END")
                 ->orderBy('aktifitas_kinerja.tanggal_mulai')
                 ->get();
-            // Hanya baris yang punya aktivitas (akt_id tidak null)
-            $aktifitas_raw = $aktifitas_raw->filter(function ($row) {
+            // Gunakan hasil fallback: hanya baris yang punya aktivitas (akt_id tidak null)
+            $aktifitas_raw = $aktifitas_fallback->filter(function ($row) {
                 return isset($row->akt_id) && $row->akt_id !== null;
             })->values();
         }
