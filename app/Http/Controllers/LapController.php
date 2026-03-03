@@ -1192,4 +1192,77 @@ class LapController extends Controller
         ]);
     }
 
+    public function stat_verifikasi(Request $request){
+        $tahun = $request->tahun;
+        $skp_tipe_id = $request->skp_tipe_id;
+        $periode_id = $request->periode_id;
+        
+        // Hitung jumlah berdasarkan status verifikasi
+        $jml_status_vrf_draft = \DB::table('skp_kontrak')
+            ->where('tahun', $tahun)
+            ->where('skp_tipe_id', $skp_tipe_id)
+            ->where('periode_id', $periode_id)
+            ->where('status_vrf_id', '1')
+            ->count();
+            
+        $jml_status_vrf_proses = \DB::table('skp_kontrak')
+            ->where('tahun', $tahun)
+            ->where('skp_tipe_id', $skp_tipe_id)
+            ->where('periode_id', $periode_id)
+            ->where('status_vrf_id', '2')
+            ->count();
+            
+        $jml_status_vrf_selesai = \DB::table('skp_kontrak')
+            ->where('tahun', $tahun)
+            ->where('skp_tipe_id', $skp_tipe_id)
+            ->where('periode_id', $periode_id)
+            ->where('status_vrf_id', '3')
+            ->count();
+
+        $jml_total_ajuan = \DB::table('skp_kontrak')
+            ->where('tahun', $tahun)
+            ->where('skp_tipe_id', $skp_tipe_id)
+            ->where('periode_id', $periode_id)
+            ->count();
+        
+        // Hitung persentase verifikasi
+        $persentase_vrf = $jml_total_ajuan > 0 
+            ? round(($jml_status_vrf_selesai / $jml_total_ajuan) * 100, 2) 
+            : 0;
+        
+        // Listing berdasarkan atasan penilai
+        $listing = \DB::table('skp_kontrak')
+            ->select(
+                'penilai_nip',
+                'penilai_nama',
+                'penilai_jabatan',
+                'penilai_unit_kerja',
+                \DB::raw('COUNT(CASE WHEN status_vrf_id = 1 THEN 1 END) as jml_draft'),
+                \DB::raw('COUNT(CASE WHEN status_vrf_id = 2 THEN 1 END) as jml_proses'),
+                \DB::raw('COUNT(CASE WHEN status_vrf_id = 3 THEN 1 END) as jml_selesai'),
+                \DB::raw('COUNT(*) as total'),
+                \DB::raw('ROUND((COUNT(CASE WHEN status_vrf_id = 3 THEN 1 END) / COUNT(*)) * 100, 2) as persentase_vrf')
+            )
+            ->where('tahun', $tahun)
+            ->where('skp_tipe_id', $skp_tipe_id)
+            ->where('periode_id', $periode_id)
+            ->whereNotNull('penilai_nip')
+            ->groupBy('penilai_nip', 'penilai_nama', 'penilai_jabatan', 'penilai_unit_kerja')
+            ->orderBy('penilai_nama', 'asc')
+            ->get();
+        
+        return response()->json([
+            "success" => true,
+            "data" => [
+                "jml_status_vrf_draft" => $jml_status_vrf_draft,
+                "jml_status_vrf_proses" => $jml_status_vrf_proses,
+                "jml_status_vrf_selesai" => $jml_status_vrf_selesai,
+                "jml_total_ajuan" => $jml_total_ajuan,
+                "persentase_vrf" => $persentase_vrf,
+                "listing" => $listing
+            ]
+        ]); 
+    }
+
+
 }

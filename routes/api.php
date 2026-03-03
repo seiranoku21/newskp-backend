@@ -158,6 +158,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('lembar_skp', 'LapController@lembar_skp');
     Route::get('lembar_skp_html', 'LapController@lembar_skp_html');
     Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf');
+    Route::get('stat_verifikasi', 'LapController@stat_verifikasi');
 
     // ---SIREMUN
     Route::get('rmn_pegawai', 'SimpegController@rmn_pegawai');
