@@ -66,11 +66,18 @@ class RolesMenuGuard
             return $next($request);
         }
 
-        // Dapatkan roles_menu user
-        $rolesMenu = $this->getUserRolesMenu($user->id);
+        // Admin (user_role_id = 1) bypass: boleh akses semua endpoint yang punya mapping
+        $userRoleId = $user->user_role_id ?? null;
+        if ($userRoleId == 1) {
+            return $next($request);
+        }
+
+        // Dapatkan roles_menu user (gunakan user_id karena primary key model Users = user_id)
+        $userId = $user->user_id ?? $user->id ?? null;
+        $rolesMenu = $this->getUserRolesMenu($userId);
 
         if (empty($rolesMenu)) {
-            Log::warning("User {$user->id} tidak memiliki roles_menu, akses ke {$endpoint} ditolak");
+            Log::warning("User {$userId} tidak memiliki roles_menu, akses ke {$endpoint} ditolak");
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden - Anda tidak memiliki akses ke fitur ini'
@@ -79,7 +86,7 @@ class RolesMenuGuard
 
         // Validasi akses berdasarkan mapping endpoint ke menu_url
         if (!$this->hasAccessToEndpoint($endpoint, $rolesMenu)) {
-            Log::warning("User {$user->id} mencoba akses {$endpoint} tanpa permission di roles_menu");
+            Log::warning("User {$userId} mencoba akses {$endpoint} tanpa permission di roles_menu");
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden - Anda tidak memiliki akses ke fitur ini. Silakan hubungi administrator.'
@@ -109,9 +116,12 @@ class RolesMenuGuard
     protected function getUserRolesMenu($userId)
     {
         try {
-            // Dapatkan user dengan role
+            if (empty($userId)) {
+                return [];
+            }
+            // Tabel users pakai primary key user_id (bukan id)
             $user = DB::table('users')
-                ->where('id', $userId)
+                ->where('user_id', $userId)
                 ->first();
 
             if (!$user || !$user->user_role_id) {
