@@ -77,5 +77,6 @@ class Kernel extends HttpKernel
         'jwt.auth' => \App\Http\Middleware\JWTAuthentication::class,
         'api.key' => \App\Http\Middleware\ApiKey::class,
         'secure.cors' => \App\Http\Middleware\SecureCors::class, // Custom secure CORS
+        'roles.menu.guard' => \App\Http\Middleware\RolesMenuGuard::class, // Validasi akses berdasarkan roles_menu
     ];
 }

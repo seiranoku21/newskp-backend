@@ -155,10 +155,10 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
 
     // ---LAPORAN
     Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');
-    Route::get('lembar_skp', 'LapController@lembar_skp');
-    Route::get('lembar_skp_html', 'LapController@lembar_skp_html');
-    Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf');
-    Route::get('stat_verifikasi', 'LapController@stat_verifikasi');
+    Route::get('lembar_skp', 'LapController@lembar_skp')->middleware('roles.menu.guard');
+    Route::get('lembar_skp_html', 'LapController@lembar_skp_html')->middleware('roles.menu.guard');
+    Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf')->middleware('roles.menu.guard');
+    Route::get('stat_verifikasi', 'LapController@stat_verifikasi')->middleware('roles.menu.guard');
 
     // ---SIREMUN
     Route::get('rmn_pegawai', 'SimpegController@rmn_pegawai');
