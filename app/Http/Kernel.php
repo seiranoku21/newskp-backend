@@ -42,7 +42,9 @@ class Kernel extends HttpKernel
         'api' => [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Illuminate\Session\Middleware\StartSession::class,
+            // StartSession dihapus: agar cookie newskp_session tidak dibuat lagi setelah logout.
+            // Auth memakai JWT (access_token), bukan session. Logout tetap kirim Set-Cookie expire.
+            // \Illuminate\Session\Middleware\StartSession::class,
             \App\Http\Middleware\JWTAuthentication::class,
             // \App\Http\Middleware\SSOAuthentication::class,
         ],
