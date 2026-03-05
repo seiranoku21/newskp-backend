@@ -160,6 +160,9 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('lembar_skp_pdf', 'LapController@lembar_skp_pdf')->middleware('roles.menu.guard');
     Route::get('stat_verifikasi', 'LapController@stat_verifikasi')->middleware('roles.menu.guard');
 
+    // REPOSITORY
+    Route::get('repository', 'RepositoryController@repository');
+
     // ---SIREMUN
     Route::get('rmn_pegawai', 'SimpegController@rmn_pegawai');
     Route::get('rmn_rwy_jabatan', 'SimpegController@rmn_rwy_jabatan');
