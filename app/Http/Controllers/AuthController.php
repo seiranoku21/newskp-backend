@@ -249,6 +249,12 @@ class AuthController extends Controller{
 		try {
 			$rootDomain = '.untirta.ac.id';
 
+			// Invalidate Laravel session so server-side session is destroyed
+			if (session()->isStarted()) {
+				session()->invalidate();
+				session()->regenerateToken();
+			}
+
 			// Clear access_token: harus sama dengan saat set (domain null = host request)
 			// Supaya cookie di skpv2.untirta.ac.id terhapus
 			$accessTokenCookieHost = cookie(
@@ -257,7 +263,7 @@ class AuthController extends Controller{
 				-1,
 				'/',
 				null,
-				false,
+				$request->secure(),
 				true,
 				false,
 				'lax'
@@ -269,7 +275,7 @@ class AuthController extends Controller{
 				-1,
 				'/',
 				$rootDomain,
-				false,
+				$request->secure(),
 				true,
 				false,
 				'lax'
@@ -282,24 +288,44 @@ class AuthController extends Controller{
 				-1,
 				'/',
 				$rootDomain,
-				false,
+				$request->secure(),
 				true,
 				false,
 				'lax'
 			);
 
-			// Clear newskp_session cookie if exists
+			// Clear newskp_session: domain/secure/same_site HARUS sama dengan saat cookie diset
+			// agar browser benar-benar menghapus cookie (khususnya HttpOnly + Secure)
+			$sessionDomain = config('session.domain');
+			$sessionSecure = (bool) config('session.secure', $request->secure());
+			$sessionSameSite = config('session.same_site', 'lax');
 			$sessionCookie = cookie(
-				'newskp_session',
+				config('session.cookie', 'newskp_session'),
 				'',
 				-1,
-				'/',
-				null,
-				false,
+				config('session.path', '/'),
+				$sessionDomain,
+				$sessionSecure,
 				true,
 				false,
-				'lax'
+				$sessionSameSite
 			);
+
+			// Jika session cookie diset dengan domain spesifik, kirim juga clear untuk domain null (host)
+			$sessionCookieHost = null;
+			if ($sessionDomain !== null && $sessionDomain !== '') {
+				$sessionCookieHost = cookie(
+					config('session.cookie', 'newskp_session'),
+					'',
+					-1,
+					'/',
+					null,
+					$sessionSecure,
+					true,
+					false,
+					$sessionSameSite
+				);
+			}
 
 			// Clear XSRF-TOKEN cookie if exists
 			$xsrfCookie = cookie(
@@ -308,13 +334,13 @@ class AuthController extends Controller{
 				-1,
 				'/',
 				null,
-				false,
+				$request->secure(),
 				false,
 				false,
 				'lax'
 			);
 
-			return response()->json([
+			$response = response()->json([
 				'message' => 'Logged out successfully'
 			], 200)
 				->cookie($accessTokenCookieHost)
@@ -322,6 +348,10 @@ class AuthController extends Controller{
 				->cookie($refreshTokenCookie)
 				->cookie($sessionCookie)
 				->cookie($xsrfCookie);
+			if ($sessionCookieHost !== null) {
+				return $response->cookie($sessionCookieHost);
+			}
+			return $response;
 
 		} catch (Exception $e) {
 			return response()->json([
