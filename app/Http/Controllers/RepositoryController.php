@@ -10,10 +10,14 @@ class RepositoryController extends Controller
     //
     function repository(Request $request){
         $email = $request->email;
-        $rows = DB::table('aktifitas_kinerja')
+        $tahun = $request->tahun;
+        $query = DB::table('aktifitas_kinerja')
                 ->select('id', 'tahun', 'nip', 'email', 'gambar', 'dokumen', 'tautan')
-                ->where('email', $email)
-                ->get();
+                ->where('email', $email);
+        if ($tahun !== null && $tahun !== '') {
+            $query->where('tahun', $tahun);
+        }
+        $rows = $query->get();
 
         // Kelompokkan per tahun, nip, email; repository = list item (id, gambar, dokumen, tautan)
         $grouped = $rows->groupBy(function ($item) {
