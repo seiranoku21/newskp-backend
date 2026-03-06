@@ -1180,12 +1180,12 @@ class AglobalController extends Controller
                 $updateData['predikat_kinerja'] = $predikat;
             }
 
-            // Hitung jml_rating_ae, jml_rating_se, jml_rating_be dari aktifitas_kinerja (sama seperti vrf_detail)
+            // Hitung jml_rating_ae, jml_rating_se, jml_rating_be dari aktifitas_kinerja (filter sama persis dengan vrf_detail agar list dan detail konsisten)
             $aktifitas = DB::table('skp_kontrak')
                 ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
                 ->where('skp_kontrak.uid', $uid)
-                ->whereColumn('aktifitas_kinerja.tanggal_mulai', '>=', 'skp_kontrak.periode_awal')
-                ->whereColumn('aktifitas_kinerja.tanggal_selesai', '<=', 'skp_kontrak.periode_akhir')
+                ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+                ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
                 ->select('aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja', 'aktifitas_kinerja.poin as akt_poin')
                 ->get();
 
