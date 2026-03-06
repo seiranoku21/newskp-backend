@@ -152,6 +152,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     // ---PEGAWAI
     Route::get('data_pegawai', 'PegawaiController@data_pegawai');
     Route::get('data_pegawai/{nip}', 'PegawaiController@get_pegawai_by_nip');
+    Route::get('cek_role_pegawai', 'AglobalController@cek_role_pegawai');
 
     // ---LAPORAN
     Route::get('rekap_poin_semester', 'AglobalController@rekap_poin_semester');

@@ -65,6 +65,16 @@ class AglobalController extends Controller
         $riwayat_jabatan = SimpegController::riwayat_jabatan($nip);
         return $riwayat_jabatan;
     }
+
+    public function cek_role_pegawai(Request $request){
+        $email = $request->email;
+        $role = DB::table('users')
+                ->leftJoin('roles', 'users.user_role_id', '=', 'roles.role_id')
+                ->where('users.email', $email)
+                ->select('users.user_role_id', 'roles.role_name')
+                ->first();
+        return $role ?: (object) ['user_role_id' => null, 'role_name' => null];
+    }
     // ---PEGAWAI END---
 
     // ---PERIODE START---
