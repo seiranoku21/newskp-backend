@@ -164,7 +164,7 @@ class AglobalController extends Controller
             $query->where('email', $email);
         }
 
-        $portofolios = $query->get();
+        $portofolios = $query->orderBy('tahun', 'DESC')->orderBy('id', 'DESC')->get();
 
         // Untuk setiap portofolio, ambil detail_rubrik_kinerja dari rencana_hasil_kerja_atasan
         $result = [];
