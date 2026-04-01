@@ -707,7 +707,9 @@ function rmn_pegawai(Request $request){
                     $jabatan_aktif = '';
                 }
 
-                $id_sts_pegawai = (isset($item['statusPegawai']) && $item['statusPegawai'] === 'Aktif') ? 'd390b650-bf5e-454b-846f-efb3510f89a6' : ($item['statusPegawai'] ?? null);
+                $aktifStatusList = ['Aktif', 'Tugas Belajar', 'Tugas Belajar Mandiri'];
+                $id_sts_pegawai = (isset($item['statusPegawai']) && in_array($item['statusPegawai'], $aktifStatusList)) 
+                    ? 'd390b650-bf5e-454b-846f-efb3510f89a6' : ($item['statusPegawai'] ?? null);
 
 
                 $id_kat_pegawai =  $item['kategoriPegawai'] ?? null;
@@ -752,8 +754,6 @@ function rmn_pegawai(Request $request){
                     
                     default => null,
                 };
-
-
 
                 // Gunakan data dari pre-fetch atau dari item (pegawai response bisa sudah punya pangkat)
                 $nipValue = $item['nip'] ?? null;
