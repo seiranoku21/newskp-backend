@@ -1100,6 +1100,12 @@ function rmn_rwy_bkd(Request $request){
                         continue;
                     }
                     $idBkd = $item['idBkd'] ?? null;
+                    $hasil = trim((string) ($item['hasil'] ?? ''));
+                    $poin = match ($hasil) {
+                        'M' => 12,
+                        'TM' => 0,
+                        default => null,
+                    };
                     $data[] = [
                         'id_riwayat_bkd' => $idBkd,
                         'id_pegawai' => $item['kodePegawai'] ?? null,
@@ -1109,7 +1115,8 @@ function rmn_rwy_bkd(Request $request){
                         'nuptk' => $item['nuptk'] ?? null,
                         'nama_pegawai' => $item['namaPegawai'] ?? null,
                         'email_pegawai' => $item['emailPegawai'] ?? null,
-                        'hasil' => $item['hasil'] ?? null,
+                        'hasil' => $hasil !== '' ? $hasil : null,
+                        'poin' => $poin,
                     ];
                 }
             }
