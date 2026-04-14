@@ -1042,5 +1042,115 @@ function rmn_rwy_studi(Request $request){
     }
 }
 
+function rmn_rwy_bkd(Request $request){
+    $nip = $request->query('nip') ?? $request->nip;
+    $semester = $request->query('semester') ?? $request->semester;
+    $email = $request->query('email')
+        ?? $request->query('email_pegawai')
+        ?? $request->input('email')
+        ?? $request->input('email_pegawai');
+    $idPegawai = $request->query('id_pegawai')
+        ?? $request->query('kode_pegawai')
+        ?? $request->input('id_pegawai')
+        ?? $request->input('kode_pegawai');
+
+    $filterNip = $nip !== null && $nip !== '' ? trim((string) $nip) : '';
+    $filterEmail = $email !== null && $email !== '' ? trim((string) $email) : '';
+    $filterEmailNorm = $filterEmail !== '' ? mb_strtolower($filterEmail, 'UTF-8') : '';
+    $filterIdPegawai = $idPegawai !== null && $idPegawai !== '' ? trim((string) $idPegawai) : '';
+
+    $jsonOpts = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
+
+    try {
+        $response = Http::withHeaders([
+            'simpeg2023' => 'Springu2023',
+            'Content-Type' => 'application/json',
+            'Connection' => 'Keep-Alive',
+            'Accept' => 'application/json'
+        ])->timeout(60)->get('https://simpeg.untirta.ac.id/berbagidata/riwayat_bkd', [
+            'nip' => $nip,
+            'semester' => $semester
+        ]);
+
+        if ($response->successful()) {
+            try {
+                $responseData = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'SIMPEG response is not valid JSON',
+                    'data' => [],
+                ], 502, [], $jsonOpts);
+            }
+
+            if (! is_array($responseData)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'SIMPEG response has an unsupported shape',
+                    'data' => [],
+                ], 502, [], $jsonOpts);
+            }
+
+            $data = [];
+            $raw = $responseData['data'] ?? null;
+            if (is_array($raw) && !empty($raw)) {
+                $rows = array_is_list($raw) ? $raw : [$raw];
+                foreach ($rows as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    $idBkd = $item['idBkd'] ?? null;
+                    $data[] = [
+                        'id_riwayat_bkd' => $idBkd,
+                        'id_pegawai' => $item['kodePegawai'] ?? null,
+                        'nip' => $item['nip'] ?? null,
+                        'id_bkd' => $idBkd,
+                        'semester' => $item['semester'] ?? null,
+                        'nuptk' => $item['nuptk'] ?? null,
+                        'nama_pegawai' => $item['namaPegawai'] ?? null,
+                        'email_pegawai' => $item['emailPegawai'] ?? null,
+                        'hasil' => $item['hasil'] ?? null,
+                    ];
+                }
+            }
+
+            if ($filterNip !== '' || $filterEmailNorm !== '' || $filterIdPegawai !== '') {
+                $data = array_values(array_filter($data, function ($row) use ($filterNip, $filterEmailNorm, $filterIdPegawai) {
+                    if ($filterNip !== '' && (($row['nip'] ?? '') !== $filterNip)) {
+                        return false;
+                    }
+                    if ($filterIdPegawai !== '' && (($row['id_pegawai'] ?? '') !== $filterIdPegawai)) {
+                        return false;
+                    }
+                    if ($filterEmailNorm !== '') {
+                        $rowEmail = mb_strtolower(trim((string) ($row['email_pegawai'] ?? '')), 'UTF-8');
+                        if ($rowEmail !== $filterEmailNorm) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }));
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ], 200, [], $jsonOpts);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch data',
+                'data' => []
+            ], $response->status(), [], $jsonOpts);
+        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Request failed: ' . $e->getMessage(),
+            'data' => []
+        ], 500, [], $jsonOpts);
+    }
+}
 
 }

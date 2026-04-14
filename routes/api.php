@@ -168,7 +168,7 @@ Route::middleware(['auth:api', 'rbac'])->group(function () {
     Route::get('rmn_pegawai', 'SimpegController@rmn_pegawai');
     Route::get('rmn_rwy_jabatan', 'SimpegController@rmn_rwy_jabatan');
     Route::get('rmn_rwy_studi', 'SimpegController@rmn_rwy_studi');
-
+    Route::get('rmn_rwy_bkd', 'SimpegController@rmn_rwy_bkd');
     // ---END INTEGRASI
 
     // JWT-protected routes (uses global JWTAuthentication middleware from api group)
