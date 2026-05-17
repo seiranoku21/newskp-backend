@@ -19,7 +19,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-bootstrap/app.php
 /z_dokumen
 /z_dokumen/
 id_ed25519
