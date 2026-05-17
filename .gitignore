@@ -23,3 +23,8 @@ yarn-error.log
 /z_dokumen/
 id_ed25519
 id_ed25519.pub
+Dockerfile
+docker-compose.yml
+docker/entrypoint.sh
+docker/apache/000-default-ssl.conf
+docker/apache/000-default.conf
