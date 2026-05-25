@@ -6,6 +6,7 @@ use App\Http\Requests\AktifitasKinerjaEditRequest;
 use App\Http\Requests\AktifitasKinerjaEditVrfRequest;
 use App\Models\AktifitasKinerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Exception;
 class AktifitasKinerjaController extends Controller
 {
@@ -255,9 +256,7 @@ class AktifitasKinerjaController extends Controller
 			$file = $request->file('gambar');
 			$filename = uniqid('gambar_') . '.' . $file->getClientOriginalExtension();
 			$destinationPath = public_path('uploads/files/gambar/');
-			if (!file_exists($destinationPath)) {
-				mkdir($destinationPath, 0777, true);
-			}
+			File::ensureDirectoryExists($destinationPath, 0775, true);
 			$file->move($destinationPath, $filename);
 			$data['gambar'] = 'uploads/files/gambar/' . $filename;
 		}
@@ -267,9 +266,7 @@ class AktifitasKinerjaController extends Controller
 			$file = $request->file('dokumen');
 			$filename = uniqid('dokumen_') . '.' . $file->getClientOriginalExtension();
 			$destinationPath = public_path('uploads/files/');
-			if (!file_exists($destinationPath)) {
-				mkdir($destinationPath, 0777, true);
-			}
+			File::ensureDirectoryExists($destinationPath, 0775, true);
 			$file->move($destinationPath, $filename);
 			$data['dokumen'] = 'uploads/files/' . $filename;
 		}
