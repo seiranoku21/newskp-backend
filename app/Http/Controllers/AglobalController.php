@@ -1159,6 +1159,34 @@ class AglobalController extends Controller
         return $matrix[$hk][$pk] ?? null;
     }
 
+    /**
+     * Ambil poin_penuh dari ref_periode (nilai remun saat bobot penilaian = 100%).
+     */
+    private function getPoinPenuhPeriode($periode_id): ?float
+    {
+        if ($periode_id === null || $periode_id === '') {
+            return null;
+        }
+        $periode = DB::table('ref_periode')->where('id', $periode_id)->first();
+        if ($periode && isset($periode->poin_penuh) && $periode->poin_penuh !== null && $periode->poin_penuh !== '') {
+            return (float) $periode->poin_penuh;
+        }
+        return null;
+    }
+
+    /**
+     * Point remun (P2) = (bobot_persen / 100) * poin_penuh.
+     * Contoh: poin_penuh 28, bobot 150% → 28 × 1.5 = 42.
+     */
+    private function hitungPointRemun($bobot_persen, $periode_id): float
+    {
+        $poin_penuh = $this->getPoinPenuhPeriode($periode_id);
+        if ($poin_penuh === null) {
+            $poin_penuh = 0;
+        }
+        return round((float) (($bobot_persen / 100) * $poin_penuh), 3);
+    }
+
     function ubah_status_vrf(Request $request){
         $uid = $request->uid;
         $status_vrf_id = (int) $request->status_vrf_id;
@@ -1203,8 +1231,7 @@ class AglobalController extends Controller
             $updateData['hk_be'] = $jml_rating_be;
             if ($bobot_persen !== null) {
                 $updateData['bobot_persen'] = $bobot_persen;
-                $point_remun = round((float) (($bobot_persen / 100) * 9.33), 3);
-                $updateData['poin'] = $point_remun;
+                $updateData['poin'] = $this->hitungPointRemun($bobot_persen, $row->periode_id);
             }
         }
 
@@ -1445,7 +1472,8 @@ class AglobalController extends Controller
         $bobot_persen = $jml_total_aktifitas > 0
             ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
             : 0;
-        $point_remun = round((float) (($bobot_persen / 100) * 9.33), 3);
+        $periode_id = $kontrak_skp ? $kontrak_skp->periode_id : null;
+        $point_remun = $this->hitungPointRemun($bobot_persen, $periode_id);
 
         $stastisik_aktifitas = [
             'jml_rating_ae' => $jml_rating_ae,
@@ -1727,12 +1755,11 @@ class AglobalController extends Controller
                 ->groupBy('pegawai_nip', 'pegawai_email', 'pegawai_nama','pegawai_id')
                 ->get();
 
-            // Add poin_remun calculation based on formula (bobot_persen/100)*28
-            $data = $data->map(function($item) {
-                $item->poin_remun = ($item->bobot_persen / 100) * 28;
-                // Add poin_remun_akhir calculation
-                $item->poin_remun_akhir = $item->poin_remun >= 28 ? 28 : $item->poin_remun;
-                return $item; 
+            $poin_penuh = $this->getPoinPenuhPeriode($request->periode_id ?? $id_periode) ?? 0;
+            $data = $data->map(function ($item) use ($poin_penuh) {
+                $item->poin_remun = ($item->bobot_persen / 100) * $poin_penuh;
+                $item->poin_remun_akhir = $item->poin_remun >= $poin_penuh ? $poin_penuh : $item->poin_remun;
+                return $item;
             });
 
             if($data->isEmpty()) {
