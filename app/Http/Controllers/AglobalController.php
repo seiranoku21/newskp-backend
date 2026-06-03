@@ -998,9 +998,6 @@ class AglobalController extends Controller
             if (!empty($predikat_kinerja)) {
                 $updateData['predikat_kinerja'] = $predikat_kinerja;
             }
-            if (!empty($poin)) {
-                $updateData['poin'] = $poin;
-            }
             if (!empty($hk_ae)) {
                 $updateData['hk_ae'] = $hk_ae;
             }
@@ -1012,6 +1009,12 @@ class AglobalController extends Controller
             }
             if (!empty($bobot_persen)) {
                 $updateData['bobot_persen'] = $bobot_persen;
+                $rowSkp = DB::table('skp_kontrak')->where('uid', $uid)->first();
+                if ($rowSkp && $rowSkp->periode_id) {
+                    $updateData['poin'] = $this->hitungPoinKinerja((float) $bobot_persen, $rowSkp->periode_id);
+                }
+            } elseif (!empty($poin)) {
+                $updateData['poin'] = $poin;
             }
 
             // Only update if there are fields to update
@@ -1160,14 +1163,14 @@ class AglobalController extends Controller
     }
 
     /**
-     * Ambil poin_penuh dari ref_periode (nilai remun saat bobot penilaian = 100%).
+     * Ambil poin_penuh dari ref_periode (nilai poin kinerja saat bobot penilaian = 100%).
      */
     private function getPoinPenuhPeriode($periode_id): ?float
     {
         if ($periode_id === null || $periode_id === '') {
             return null;
         }
-        $periode = DB::table('ref_periode')->where('id', $periode_id)->first();
+        $periode = DB::table('ref_periode')->where('id', (int) $periode_id)->first();
         if ($periode && isset($periode->poin_penuh) && $periode->poin_penuh !== null && $periode->poin_penuh !== '') {
             return (float) $periode->poin_penuh;
         }
@@ -1175,16 +1178,104 @@ class AglobalController extends Controller
     }
 
     /**
-     * Point remun (P2) = (bobot_persen / 100) * poin_penuh.
-     * Contoh: poin_penuh 28, bobot 150% → 28 × 1.5 = 42.
+     * Poin kinerja kontrak = (bobot_persen / 100) × ref_periode.poin_penuh.
+     * Contoh: poin_penuh 28, bobot 150% → 42; bobot 200% → 56.
      */
-    private function hitungPointRemun($bobot_persen, $periode_id): float
+    private function hitungPoinKinerja($bobot_persen, $periode_id): float
     {
         $poin_penuh = $this->getPoinPenuhPeriode($periode_id);
         if ($poin_penuh === null) {
             $poin_penuh = 0;
         }
         return round((float) (($bobot_persen / 100) * $poin_penuh), 3);
+    }
+
+    /** @deprecated Gunakan hitungPoinKinerja; dipertahankan untuk kompatibilitas respons API. */
+    private function hitungPointRemun($bobot_persen, $periode_id): float
+    {
+        return $this->hitungPoinKinerja($bobot_persen, $periode_id);
+    }
+
+    /**
+     * Ambil aktivitas verifikasi (join portofolio + fallback NIP), konsisten antara vrf_detail dan ubah_status_vrf.
+     */
+    private function ambilAktifitasVrfUntukSkp(object $skp_kontrak)
+    {
+        $uid = $skp_kontrak->uid;
+        $aktifitas_raw = DB::table('skp_kontrak')
+            ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
+            ->where('skp_kontrak.uid', $uid)
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+            ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
+            ->select(
+                'aktifitas_kinerja.id as akt_id',
+                'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
+                'aktifitas_kinerja.poin as akt_poin'
+            )
+            ->get();
+
+        $filtered = $aktifitas_raw->filter(function ($row) {
+            return isset($row->akt_id) && $row->akt_id !== null;
+        })->values();
+
+        if ($filtered->isNotEmpty()) {
+            return $filtered;
+        }
+
+        $aktifitas_fallback = DB::table('skp_kontrak')
+            ->leftJoin('aktifitas_kinerja', function ($j) {
+                $j->on('aktifitas_kinerja.nip', '=', 'skp_kontrak.pegawai_nip')
+                    ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
+                    ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)');
+            })
+            ->where('skp_kontrak.uid', $uid)
+            ->select(
+                'aktifitas_kinerja.id as akt_id',
+                'aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja',
+                'aktifitas_kinerja.poin as akt_poin'
+            )
+            ->get();
+
+        return $aktifitas_fallback->filter(function ($row) {
+            return isset($row->akt_id) && $row->akt_id !== null;
+        })->values();
+    }
+
+    /**
+     * Hitung statistik aktivitas, bobot (%), dan poin kinerja untuk satu kontrak SKP.
+     */
+    private function hitungStatistikAktifitasVrf(object $skp_kontrak): array
+    {
+        $aktifitas = $this->ambilAktifitasVrfUntukSkp($skp_kontrak);
+
+        $jml_rating_ae = $aktifitas->where('akt_rating_hasil_kerja', 'AE')->count();
+        $jml_rating_se = $aktifitas->where('akt_rating_hasil_kerja', 'SE')->count();
+        $jml_rating_be = $aktifitas->where('akt_rating_hasil_kerja', 'BE')->count();
+        $total_poin = $aktifitas->sum('akt_poin');
+        $jml_total_aktifitas = $aktifitas->count();
+        $bobot_persen = $jml_total_aktifitas > 0
+            ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
+            : null;
+
+        $bobot_efektif = $bobot_persen ?? (isset($skp_kontrak->bobot_persen) && $skp_kontrak->bobot_persen !== ''
+            ? (float) $skp_kontrak->bobot_persen
+            : null);
+        $poin_kinerja = $bobot_efektif !== null
+            ? $this->hitungPoinKinerja($bobot_efektif, $skp_kontrak->periode_id)
+            : null;
+        $poin_penuh = $this->getPoinPenuhPeriode($skp_kontrak->periode_id);
+
+        return [
+            'jml_rating_ae' => $jml_rating_ae,
+            'jml_rating_se' => $jml_rating_se,
+            'jml_rating_be' => $jml_rating_be,
+            'total_poin' => (int) $total_poin,
+            'total_aktifitas' => $jml_total_aktifitas,
+            'bobot_persen' => $bobot_persen,
+            'poin_penuh' => $poin_penuh,
+            'poin_kinerja' => $poin_kinerja,
+            'point_remun' => $poin_kinerja ?? 0,
+        ];
     }
 
     function ubah_status_vrf(Request $request){
@@ -1201,37 +1292,27 @@ class AglobalController extends Controller
 
         $updateData = ['status_vrf_id' => $status_vrf_id];
 
-        // Saat Selesai verifikasi (status 3), hitung dan simpan predikat kinerja + statistik (hk_ae, hk_se, hk_be, bobot_persen)
+        // Saat Selesai verifikasi (status 3), hitung dan simpan predikat + statistik + poin kinerja ke skp_kontrak
         if ($status_vrf_id === 3) {
             $predikat = $this->hitungPredikatKinerja($row->rating_hasil_kerja, $row->rating_perilaku_kerja);
             if ($predikat !== null) {
                 $updateData['predikat_kinerja'] = $predikat;
             }
 
-            // Hitung jml_rating_ae, jml_rating_se, jml_rating_be dari aktifitas_kinerja (filter sama persis dengan vrf_detail agar list dan detail konsisten)
-            $aktifitas = DB::table('skp_kontrak')
-                ->leftJoin('aktifitas_kinerja', 'skp_kontrak.portofolio_uid', '=', 'aktifitas_kinerja.portofolio_kinerja_uid')
-                ->where('skp_kontrak.uid', $uid)
-                ->whereRaw('DATE(aktifitas_kinerja.tanggal_mulai) >= DATE(skp_kontrak.periode_awal)')
-                ->whereRaw('DATE(aktifitas_kinerja.tanggal_selesai) <= DATE(skp_kontrak.periode_akhir)')
-                ->select('aktifitas_kinerja.rating_hasil_kerja as akt_rating_hasil_kerja', 'aktifitas_kinerja.poin as akt_poin')
-                ->get();
+            $statistik = $this->hitungStatistikAktifitasVrf($row);
+            $updateData['hk_ae'] = $statistik['jml_rating_ae'];
+            $updateData['hk_se'] = $statistik['jml_rating_se'];
+            $updateData['hk_be'] = $statistik['jml_rating_be'];
 
-            $jml_rating_ae = $aktifitas->where('akt_rating_hasil_kerja', 'AE')->count();
-            $jml_rating_se = $aktifitas->where('akt_rating_hasil_kerja', 'SE')->count();
-            $jml_rating_be = $aktifitas->where('akt_rating_hasil_kerja', 'BE')->count();
-            $total_poin = $aktifitas->sum('akt_poin');
-            $jml_total_aktifitas = $aktifitas->count();
-            $bobot_persen = $jml_total_aktifitas > 0
-                ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
-                : null;
+            $bobot_simpan = $statistik['bobot_persen'] !== null
+                ? $statistik['bobot_persen']
+                : (isset($row->bobot_persen) && $row->bobot_persen !== '' && $row->bobot_persen !== null
+                    ? (float) $row->bobot_persen
+                    : null);
 
-            $updateData['hk_ae'] = $jml_rating_ae;
-            $updateData['hk_se'] = $jml_rating_se;
-            $updateData['hk_be'] = $jml_rating_be;
-            if ($bobot_persen !== null) {
-                $updateData['bobot_persen'] = $bobot_persen;
-                $updateData['poin'] = $this->hitungPointRemun($bobot_persen, $row->periode_id);
+            if ($bobot_simpan !== null) {
+                $updateData['bobot_persen'] = $bobot_simpan;
+                $updateData['poin'] = $this->hitungPoinKinerja($bobot_simpan, $row->periode_id);
             }
         }
 
@@ -1240,6 +1321,12 @@ class AglobalController extends Controller
         $responseData = ['status_vrf_id' => $status_vrf_id];
         if (isset($updateData['predikat_kinerja'])) {
             $responseData['predikat_kinerja'] = $updateData['predikat_kinerja'];
+        }
+        if (isset($updateData['bobot_persen'])) {
+            $responseData['bobot_persen'] = $updateData['bobot_persen'];
+        }
+        if (isset($updateData['poin'])) {
+            $responseData['poin'] = $updateData['poin'];
         }
         return response()->json([
             'success' => true,
@@ -1464,26 +1551,23 @@ class AglobalController extends Controller
             })->values();
         }
 
-        $jml_rating_ae = $aktifitas_raw->where('akt_rating_hasil_kerja', 'AE')->count();
-        $jml_rating_se = $aktifitas_raw->where('akt_rating_hasil_kerja', 'SE')->count();
-        $jml_rating_be = $aktifitas_raw->where('akt_rating_hasil_kerja', 'BE')->count();
-        $total_poin = $aktifitas_raw->sum('akt_poin');
-        $jml_total_aktifitas = $aktifitas_raw->count();
-        $bobot_persen = $jml_total_aktifitas > 0
-            ? round((float) (($total_poin / ($jml_total_aktifitas * 2)) * 100), 2)
-            : 0;
-        $periode_id = $kontrak_skp ? $kontrak_skp->periode_id : null;
-        $point_remun = $this->hitungPointRemun($bobot_persen, $periode_id);
-
-        $stastisik_aktifitas = [
-            'jml_rating_ae' => $jml_rating_ae,
-            'jml_rating_se' => $jml_rating_se,
-            'jml_rating_be' => $jml_rating_be,
-            'total_poin' => (int) $total_poin,
-            'total_aktifitas' => $jml_total_aktifitas,
-            'bobot_persen' => $bobot_persen,
-            'point_remun' => $point_remun,
-        ];
+        $stastisik_aktifitas = $kontrak_skp
+            ? $this->hitungStatistikAktifitasVrf($kontrak_skp)
+            : [
+                'jml_rating_ae' => 0,
+                'jml_rating_se' => 0,
+                'jml_rating_be' => 0,
+                'total_poin' => 0,
+                'total_aktifitas' => 0,
+                'bobot_persen' => 0,
+                'poin_penuh' => null,
+                'poin_kinerja' => null,
+                'point_remun' => 0,
+            ];
+        // Tampilan bobot 0 bila belum ada aktivitas (API lama mengharapkan angka, bukan null)
+        if ($stastisik_aktifitas['bobot_persen'] === null) {
+            $stastisik_aktifitas['bobot_persen'] = 0;
+        }
 
         return response()->json([
             'success' => true,
