@@ -880,18 +880,21 @@ function rmn_rwy_jabatan(Request $request){
     };
 
     $mapRiwayatJabatan = static function (array $item) use ($normalizeDate, $resolveKodeJabatan) {
+        $tglMulai = $normalizeDate($item['tglMulai'] ?? null);
+        $tglSk = $normalizeDate($item['tglSk'] ?? null);
         $tglSelesai = $normalizeDate($item['tglSelesai'] ?? null);
+        $tmtSk = $tglMulai ?? $tglSk;
         return [
             'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
             'id_jabatan' => $resolveKodeJabatan($item),
             'id_pegawai' => $item['kodeData'] ?? null,
             'nip' => $item['nip'] ?? null,
             'id_unit' => $item['unitKerja_id'] ?? null,
-            'tmt_sk' => $normalizeDate($item['tglMulai'] ?? null),
+            'tmt_sk' => $tmtSk,
             'tst_sk' => $tglSelesai,
-            'tgl_mulai' => $normalizeDate($item['tglMulai'] ?? null),
+            'tgl_mulai' => $tmtSk,
             'tgl_selesai' => $tglSelesai,
-            'tgl_sk' => $normalizeDate($item['tglSk'] ?? null),
+            'tgl_sk' => $tglSk,
             'no_sk' => $item['skJabatan'] ?? null,
             'is_active' => $item['status'] ?? null,
             'created_at' => now(),
