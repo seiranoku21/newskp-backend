@@ -899,6 +899,7 @@ function rmn_rwy_jabatan(Request $request){
             'created_at' => now(),
             'updated_at' => now(),
             'deleted_at' => null,
+            
         ];
     };
 
