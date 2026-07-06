@@ -861,6 +861,45 @@ function rmn_pegawai(Request $request){
 function rmn_rwy_jabatan(Request $request){
     $nip = $request->query('nip') ?? $request->nip;
 
+    $normalizeDate = static function ($value) {
+        if ($value === null || $value === '' || $value === '-' || $value === '0000-00-00') {
+            return null;
+        }
+        return $value;
+    };
+
+    $resolveKodeJabatan = static function (array $item) {
+        $katId = (string) ($item['katJabatan_id'] ?? '');
+        if ($katId === '1') {
+            return $item['jabatan_id'] ?? null;
+        }
+        if ($katId === '2') {
+            return $item['jabatan_id'] ?? $item['jabatan_fungsional_id'] ?? null;
+        }
+        return $item['jabatan_id'] ?? $item['jabatan_fungsional_id'] ?? null;
+    };
+
+    $mapRiwayatJabatan = static function (array $item) use ($normalizeDate, $resolveKodeJabatan) {
+        $tglSelesai = $normalizeDate($item['tglSelesai'] ?? null);
+        return [
+            'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
+            'id_jabatan' => $resolveKodeJabatan($item),
+            'id_pegawai' => $item['kodeData'] ?? null,
+            'nip' => $item['nip'] ?? null,
+            'id_unit' => $item['unitKerja_id'] ?? null,
+            'tmt_sk' => $normalizeDate($item['tglMulai'] ?? null),
+            'tst_sk' => $tglSelesai,
+            'tgl_mulai' => $normalizeDate($item['tglMulai'] ?? null),
+            'tgl_selesai' => $tglSelesai,
+            'tgl_sk' => $normalizeDate($item['tglSk'] ?? null),
+            'no_sk' => $item['skJabatan'] ?? null,
+            'is_active' => $item['status'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+            'deleted_at' => null,
+        ];
+    };
+
     try {
         $response = Http::withHeaders([
             'simpeg2023' => 'Springu2023',
@@ -874,57 +913,21 @@ function rmn_rwy_jabatan(Request $request){
         if ($response->successful()) {
             $responseData = $response->json();
             $data = [];
-            if (isset($responseData['data']) && is_array($responseData['data'])) {
-                foreach ($responseData['data'] as $item) {
-                    $kode_jabatan = null;
-                    if (($item['katJabatan_id'] ?? null) == '1') {
-                        $kode_jabatan = $item['jabatan_id'] ?? null;
-                    } elseif (($item['katJabatan_id'] ?? null) == '2') {
-                        $kode_jabatan = $item['jabatan_fungsional_id'] ?? null;
+            $raw = $responseData['data'] ?? null;
+            if (is_array($raw) && !empty($raw)) {
+                $rows = array_is_list($raw) ? $raw : [$raw];
+                foreach ($rows as $item) {
+                    if (!is_array($item)) {
+                        continue;
                     }
-                    $data[] = [
-                        'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
-                        'id_jabatan' => $kode_jabatan,
-                        'id_pegawai' => $item['kodeData'] ?? null,
-                        'nip' => $item['nip'] ?? null,
-                        'id_unit' => $item['unitKerja_id'] ?? null,
-                        'tmt_sk' => $item['tglSk'] ?? null,
-                        'tst_sk' => $item['tglSelesai'] ?? null,
-                        'tgl_mulai' => $item['tglSk'] ?? null,
-                        'tgl_selesai' => $item['tglSelesai'] ?? null,
-                        'tgl_sk' => $item['tglSk'] ?? null,
-                        'no_sk' => $item['skJabatan'] ?? null,
-                        'is_active' => $item['status'] ?? null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                        'deleted_at' => null,
-                    ];
+                    $data[] = $mapRiwayatJabatan($item);
                 }
-            } elseif (isset($responseData['data']) && !empty($responseData['data'])) {
-                $item = $responseData['data'];
-                $data[] = [
-                    'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
-                    'id_jabatan' => $kode_jabatan,
-                    'id_pegawai' => $item['kodeData'] ?? null,
-                    'nip' => $item['nip'] ?? null,
-                    'id_unit' => $item['unitKerja_id'] ?? null,
-                    'tmt_sk' => $item['tglSk'] ?? null,
-                    'tst_sk' => $item['tglSelesai'] ?? null,
-                    'tgl_mulai' => $item['tglSk'] ?? null,
-                    'tgl_selesai' => $item['tglSelesai'] ?? null,
-                    'tgl_sk' => $item['tglSk'] ?? null,
-                    'no_sk' => $item['skJabatan'] ?? null,
-                    'is_active' => $item['status'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                    'deleted_at' => null,
-                ];
             }
 
             return response()->json([
                 'status' => 'success',
                 'data' => $data
-            ], 200);        
+            ], 200);
         } else {
             return response()->json([
                 'status' => 'error',
