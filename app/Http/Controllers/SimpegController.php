@@ -883,16 +883,15 @@ function rmn_rwy_jabatan(Request $request){
         $tglMulai = $normalizeDate($item['tglMulai'] ?? null);
         $tglSk = $normalizeDate($item['tglSk'] ?? null);
         $tglSelesai = $normalizeDate($item['tglSelesai'] ?? null);
-        $tmtSk = $tglMulai ?? $tglSk;
         return [
             'id_riwayat_jabatan' => $item['kodeRiwayatJabatan'] ?? null,
             'id_jabatan' => $resolveKodeJabatan($item),
             'id_pegawai' => $item['kodeData'] ?? null,
             'nip' => $item['nip'] ?? null,
             'id_unit' => $item['unitKerja_id'] ?? null,
-            'tmt_sk' => $tmtSk,
+            'tmt_sk' => $tglMulai ?? '0000-00-00',
             'tst_sk' => $tglSelesai,
-            'tgl_mulai' => $tmtSk,
+            'tgl_mulai' => $tglMulai ?? '0000-00-00',
             'tgl_selesai' => $tglSelesai,
             'tgl_sk' => $tglSk,
             'no_sk' => $item['skJabatan'] ?? null,
